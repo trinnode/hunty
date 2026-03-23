@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 import Image from "next/image";
 
 import { useState, useEffect } from "react";
@@ -114,12 +114,17 @@ export function PlayGame({
     }
   };
 
+  const handleExit = () => {
+    setError(null);
+    onExit();
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 text-lg mb-4">{error}</p>
-          <Button variant="ghost" onClick={onExit}>
+          <Button variant="ghost" onClick={handleExit}>
             Go Back
           </Button>
         </div>
@@ -135,7 +140,7 @@ export function PlayGame({
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
-            onClick={onExit}
+            onClick={handleExit}
             className="flex items-center gap-2 text-slate-700 hover:text-slate-900"
           >
             <ArrowLeft className="w-6 h-6 fill-[#0C0C4F]" />
