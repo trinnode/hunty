@@ -55,7 +55,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
         {mounted && connected ? (
           <div className="flex flex-row items-center gap-2 sm:gap-4 min-w-0 w-full sm:w-auto flex-1 justify-between sm:justify-end">
             {/* Balance pill */}
-            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full">
+            <div id="balance-pill" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full">
               <Coin />
               <span className="bg-gradient-to-br from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent text-xs sm:text-sm md:text-base lg:text-xl font-medium">
                 {balance}
@@ -137,6 +137,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
           </div>
         ) : (
           <Button
+            id="wallet-button"
             onClick={() => setModalOpen(true)}
             className="bg-[#0C0C4F] hover:bg-slate-700 text-white px-4 md:px-6 py-2 sm:py-3 rounded-xl text-sm md:text-xl font-black"
           >
