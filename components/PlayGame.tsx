@@ -11,6 +11,7 @@ import Share from "./icons/Share";
 import Replay from "./icons/Replay";
 import { HuntCards } from "./HuntCards";
 import { get_hunt, get_clue_info } from "@/lib/contracts/hunt";
+import { PlayerProgressPanel } from "./PlayerProgressPanel";
 
 interface Hunt {
   id: number;
