@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button"
 
 interface CreateGameTabsProps {
-  activeTab: "create" | "rewards" | "publish" | "leaderboard"
-  onTabChange: (tab: "create" | "rewards" | "publish" | "leaderboard") => void
+  activeTab: "create" | "rewards" | "publish"
+  onTabChange: (tab: "create" | "rewards" | "publish") => void
 }
 
 export function CreateGameTabs({ activeTab, onTabChange }: CreateGameTabsProps) {
@@ -20,9 +20,8 @@ export function CreateGameTabs({ activeTab, onTabChange }: CreateGameTabsProps) 
         <Button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`px-6 py-3 rounded-xl ${
-            activeTab === tab.id ? "bg-[#0C0C4F] font-extrabold text-white" : "bg-gradient-to-b from-[#576065] to-[#787884] text-white hover:bg-gray-500 font-extrabold" 
-          }`}
+          className={`px-6 py-3 rounded-xl ${activeTab === tab.id ? "bg-[#0C0C4F] font-extrabold text-white" : "bg-gradient-to-b from-[#576065] to-[#787884] text-white hover:bg-gray-500 font-extrabold"
+            }`}
         >
           {tab.label}
         </Button>

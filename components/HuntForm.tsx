@@ -25,6 +25,8 @@ interface ClueRow {
   question: string
   answer: string
   points: number
+  hint: string
+  hintCost: number
 }
 
 interface HuntFormProps {
@@ -39,7 +41,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [clueRows, setClueRows] = useState<ClueRow[]>([
-    { id: 1, question: "", answer: "", points: 10 },
+    { id: 1, question: "", answer: "", points: 10, hint: "", hintCost: 0 },
   ])
   const [isSavingClues, setIsSavingClues] = useState(false)
 
@@ -66,7 +68,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
 
   const addClueRow = () => {
     const newId = clueRows.length > 0 ? Math.max(...clueRows.map((r) => r.id)) + 1 : 1
-    setClueRows([...clueRows, { id: newId, question: "", answer: "", points: 10 }])
+    setClueRows([...clueRows, { id: newId, question: "", answer: "", points: 10, hint: "", hintCost: 0 }])
   }
 
   const removeClueRow = (id: number) => {
@@ -89,7 +91,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
       for (const row of valid) {
         const normalizedAnswer = row.answer.trim().toLowerCase()
         await withTransactionToast(
-          () => addClue(huntId, row.question.trim(), normalizedAnswer, row.points),
+          () => addClue(huntId, row.question.trim(), normalizedAnswer, row.points, row.hint.trim() || undefined, row.hintCost),
           { loading: "Adding clue...", submitted: "Clue submitted", success: "" }
         )
         saveClueLocally({
@@ -97,10 +99,12 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
           question: row.question.trim(),
           answer: normalizedAnswer,
           points: row.points,
+          hint: row.hint.trim() || undefined,
+          hintCost: row.hintCost,
         })
       }
       onCluesSaved?.(valid.length)
-      setClueRows([{ id: 1, question: "", answer: "", points: 10 }])
+      setClueRows([{ id: 1, question: "", answer: "", points: 10, hint: "", hintCost: 0 }])
     } finally {
       setIsSavingClues(false)
     }
@@ -195,38 +199,56 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
 
         <div className="space-y-2">
           {clueRows.map((row, index) => (
-            <div key={row.id} className="flex gap-2 items-center">
-              <span className="text-xs text-slate-400 w-4 shrink-0">{index + 1}.</span>
-              <Input
-                placeholder="Riddle / Question"
-                value={row.question}
-                onChange={(e) => updateClueRow(row.id, "question", e.target.value)}
-                className="flex-1 pl-3 py-2 text-sm"
-              />
-              <Input
-                placeholder="Answer"
-                value={row.answer}
-                onChange={(e) => updateClueRow(row.id, "answer", e.target.value)}
-                className="w-32 pl-3 py-2 text-sm"
-              />
-              <Input
-                type="number"
-                placeholder="Pts"
-                value={row.points}
-                min={1}
-                onChange={(e) => updateClueRow(row.id, "points", parseInt(e.target.value, 10) || 0)}
-                className="w-16 pl-3 py-2 text-sm"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => removeClueRow(row.id)}
-                disabled={clueRows.length === 1}
-                className="text-red-400 hover:text-red-600 shrink-0 disabled:opacity-30"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+            <div key={row.id} className="flex flex-col gap-2 p-2 border border-slate-100 rounded-lg">
+              <div className="flex gap-2 items-center">
+                <span className="text-xs text-slate-400 w-4 shrink-0">{index + 1}.</span>
+                <Input
+                  placeholder="Riddle / Question"
+                  value={row.question}
+                  onChange={(e) => updateClueRow(row.id, "question", e.target.value)}
+                  className="flex-1 pl-3 py-2 text-sm"
+                />
+                <Input
+                  placeholder="Answer"
+                  value={row.answer}
+                  onChange={(e) => updateClueRow(row.id, "answer", e.target.value)}
+                  className="w-32 pl-3 py-2 text-sm"
+                />
+                <Input
+                  type="number"
+                  placeholder="Pts"
+                  value={row.points}
+                  min={1}
+                  onChange={(e) => updateClueRow(row.id, "points", parseInt(e.target.value, 10) || 0)}
+                  className="w-16 pl-3 py-2 text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeClueRow(row.id)}
+                  disabled={clueRows.length === 1}
+                  className="text-red-400 hover:text-red-600 shrink-0 disabled:opacity-30"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex gap-2 items-center pl-6">
+                <Input
+                  placeholder="Optional Hint Text"
+                  value={row.hint}
+                  onChange={(e) => updateClueRow(row.id, "hint", e.target.value)}
+                  className="flex-1 pl-3 py-2 text-sm"
+                />
+                <Input
+                  type="number"
+                  placeholder="Hint Cost"
+                  value={row.hintCost}
+                  min={0}
+                  onChange={(e) => updateClueRow(row.id, "hintCost", parseInt(e.target.value, 10) || 0)}
+                  className="w-24 pl-3 py-2 text-sm"
+                />
+              </div>
             </div>
           ))}
         </div>

@@ -69,7 +69,7 @@ export default function DashboardPage() {
           </Button>
         </div>
 
-        <h1 className="mb-2 text-3xl font-bold bg-gradient-to-br from-[#3737A4] to-[#0C0C4F] text-transparent bg-clip-text">
+        <h1 className="mb-2 text-3xl font-bold bg-linear-to-br from-[#3737A4] to-[#0C0C4F] text-transparent bg-clip-text">
           My Hunts
         </h1>
         <p className="mb-8 text-slate-600">

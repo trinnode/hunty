@@ -3,7 +3,7 @@
  * Persisted in localStorage so activated hunts appear in the arcade after refresh.
  */
 
-export type HuntStatus = "Active" | "Completed" | "Draft"
+export type HuntStatus = "Active" | "Completed" | "Draft" | "Cancelled";
 
 export interface StoredHunt {
   id: number
@@ -11,6 +11,10 @@ export interface StoredHunt {
   description: string
   cluesCount: number
   status: HuntStatus
+  /** Unix timestamp in seconds — when the hunt starts. */
+  startTime?: number
+  /** Unix timestamp in seconds — when the hunt ends. */
+  endTime?: number
 }
 
 export interface Clue {
@@ -19,10 +23,15 @@ export interface Clue {
   question: string
   answer: string
   points: number
+  hint?: string
+  hintCost?: number
 }
 
 const STORAGE_KEY = "hunty_hunts"
 const CLUES_KEY = "hunty_clues"
+
+// Seed timestamps: active hunts end 7 days from first load, completed hunts in the past.
+const NOW_SECONDS = Math.floor(Date.now() / 1000)
 
 const SEED_HUNTS: StoredHunt[] = [
   {
@@ -31,6 +40,8 @@ const SEED_HUNTS: StoredHunt[] = [
     description: "Race across town to uncover hidden murals and landmarks.",
     cluesCount: 5,
     status: "Active",
+    startTime: NOW_SECONDS - 86400,
+    endTime: NOW_SECONDS + 7 * 86400,
   },
   {
     id: 2,
@@ -38,6 +49,8 @@ const SEED_HUNTS: StoredHunt[] = [
     description: "Solve riddles scattered around campus before the timer ends.",
     cluesCount: 7,
     status: "Active",
+    startTime: NOW_SECONDS - 2 * 86400,
+    endTime: NOW_SECONDS + 3 * 86400,
   },
   {
     id: 3,
@@ -45,6 +58,8 @@ const SEED_HUNTS: StoredHunt[] = [
     description: "A playful intro game for new teammates around the office.",
     cluesCount: 4,
     status: "Completed",
+    startTime: NOW_SECONDS - 10 * 86400,
+    endTime: NOW_SECONDS - 5 * 86400,
   },
   {
     id: 4,
@@ -141,4 +156,9 @@ export function saveClueLocally(clue: Omit<Clue, "id">): void {
     h.id === clue.huntId ? { ...h, cluesCount: h.cluesCount + 1 } : h
   )
   writeHunts(hunts)
+}
+
+/** Get a single hunt */
+export const getHunt = (id: string) => {
+  return readHunts().find((c) => c.id === Number(id))
 }

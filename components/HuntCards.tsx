@@ -15,6 +15,8 @@ export interface Hunt {
   link?: string;
   code?: string;
   image?: string;
+  hint?: string;
+  hintCost?: number;
 }
 
 interface HuntCardsProps {
@@ -29,6 +31,10 @@ interface HuntCardsProps {
   huntId?: number;
   /** Called with the points awarded after a correct answer. */
   onScoreUpdate?: (points: number) => void;
+  /** Point value for this clue. */
+  points?: number;
+  /** Whether this clue has been solved. */
+  solved?: boolean;
 }
 
 const DEFAULT_POINTS = 10;
@@ -43,6 +49,8 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   isLoading = false,
   huntId,
   onScoreUpdate,
+  points,
+  solved = false,
 }) => {
   const hunt = hunts && hunts.length > 0 ? hunts[0] : {} as Hunt;
   const [input, setInput] = useState("");
@@ -50,6 +58,7 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   const [success, setSuccess] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [imgGatewayIdx, setImgGatewayIdx] = useState(0);
+  const [hintRevealed, setHintRevealed] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isPending) return;
@@ -70,7 +79,8 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
         // ClueCompleted event received
         setSuccess(true);
         setInput("");
-        onScoreUpdate?.(DEFAULT_POINTS);
+        const actualPoints = Math.max(0, (points ?? DEFAULT_POINTS) - (hintRevealed ? (hunt.hintCost || 0) : 0));
+        onScoreUpdate?.(actualPoints);
         setTimeout(() => {
           setSuccess(false);
           onUnlock?.();
@@ -91,7 +101,8 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
         setSuccess(true);
         setError("");
         setInput("");
-        onScoreUpdate?.(DEFAULT_POINTS);
+        const actualPoints = Math.max(0, (points ?? DEFAULT_POINTS) - (hintRevealed ? (hunt.hintCost || 0) : 0));
+        onScoreUpdate?.(actualPoints);
         setTimeout(() => {
           setSuccess(false);
           onUnlock?.();
@@ -128,13 +139,21 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
     );
   }
 
-  const isLocked = !isActive || preview || isPending;
+  const isLocked = !isActive || preview || isPending || solved;
 
   return (
-    <div className={`rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 ${isActive ? "scale-105 border-2 border-blue-400" : preview ? "opacity-70" : "opacity-90"}`}>
+    <div className={`rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative ${isActive ? "scale-105 border-2 border-blue-400" : preview ? "opacity-70" : "opacity-90"}`}>
+      {solved && (
+        <div className="absolute inset-0 bg-green-500/10 rounded-2xl z-20 flex items-center justify-center pointer-events-none">
+          <CheckCircle2 className="w-16 h-16 text-green-500 opacity-60" />
+        </div>
+      )}
       <div className="rounded-t-2xl p-6 text-white bg-gradient-to-b from-[#3737A4] to-[#0C0C4F]">
-        <div className="text-right text-[#B3B3E5] text-sm mb-2">
-          {currentIndex}/{totalHunts}
+        <div className="flex justify-between items-center text-sm mb-2">
+          {points != null && (
+            <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-semibold">{points} pts</span>
+          )}
+          <span className="text-[#B3B3E5] ml-auto">{currentIndex}/{totalHunts}</span>
         </div>
         <h3 className="text-xl font-bold mb-2">
           {hunt.title || "Untitled Hunt"}
@@ -159,6 +178,27 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
           <Image src={picture} alt="hunt" width={180} height={180} />
         )}
       </div>
+
+      {hunt.hint && !solved && (
+        <div className="bg-white px-6 py-2 border-b border-gray-100">
+          {!hintRevealed ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+              onClick={() => setHintRevealed(true)}
+              disabled={isLocked}
+            >
+              Reveal Hint (-{hunt.hintCost || 0} pts)
+            </Button>
+          ) : (
+            <div className="bg-blue-50 text-blue-800 p-3 rounded-xl text-sm border border-blue-100">
+              <span className="font-semibold text-blue-900 mr-2">Hint:</span>
+              {hunt.hint}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Input and button only for active, non-preview cards */}
       <div className="bg-white flex gap-2 p-6 rounded-b-2xl items-center">

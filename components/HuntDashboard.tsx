@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import type { StoredHunt } from "@/lib/huntStore"
 import { ActivateHuntModal } from "@/components/ActivateHuntModal"
+import Link from "next/link"
 
 interface ClueRow {
   id: number
@@ -48,6 +49,7 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
   const [modalHunt, setModalHunt] = useState<StoredHunt | null>(null)
   const [activatingId, setActivatingId] = useState<number | null>(null)
   const [clueModalHunt, setClueModalHunt] = useState<StoredHunt | null>(null)
+  const [leaderboardHunt, setLeaderboardHunt] = useState<StoredHunt | null>(null)
   const [clueRows, setClueRows] = useState<ClueRow[]>([
     { id: 1, question: "", answer: "", points: 10 },
   ])
@@ -111,6 +113,8 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {hunts.map((hunt) => {
           const isDraft = hunt.status === "Draft"
+          const isActive = hunt.status === "Active"
+          const isCompleted = hunt.status === "Completed"
           const hasClues = hunt.cluesCount > 0
           const canActivate = isDraft && hasClues
 
@@ -119,6 +123,7 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
               key={hunt.id}
               className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
             >
+              <Link href={`/hunt/${hunt.id}`}>
               <div className="p-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <CardTitle className="line-clamp-2 text-lg">{hunt.title}</CardTitle>
@@ -143,14 +148,27 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
                         Add Clues
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      onClick={() => handleActivateClick(hunt)}
-                      disabled={!canActivate}
-                      className="bg-gradient-to-b from-[#39A437] to-[#194F0C] hover:bg-green-700 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      Activate
-                    </Button>
+                    {(isActive || isCompleted) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setLeaderboardHunt(hunt)}
+                        className="border-[#3737A4] text-[#3737A4] hover:bg-[#3737A4] hover:text-white flex items-center gap-1.5"
+                      >
+                        <Trophy className="w-4 h-4" />
+                        Leaderboard
+                      </Button>
+                    )}
+                    {isDraft && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleActivateClick(hunt)}
+                        disabled={!canActivate}
+                        className="bg-gradient-to-b from-[#39A437] to-[#194F0C] hover:bg-green-700 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        Activate
+                      </Button>
+                    )}
                   </div>
                 </div>
                 {isDraft && !hasClues && (
@@ -159,6 +177,7 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
                   </p>
                 )}
               </div>
+              </Link>
             </Card>
           )
         })}
@@ -171,6 +190,23 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
         huntTitle={modalHunt?.title ?? ""}
         isActivating={activatingId !== null}
       />
+
+      {/* Leaderboard Modal */}
+      <Dialog open={!!leaderboardHunt} onOpenChange={(open) => !open && setLeaderboardHunt(null)}>
+        <DialogContent showCloseButton className="sm:max-w-2xl bg-[#f9f9ff]">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] text-transparent bg-clip-text text-center">
+              Leaderboard — {leaderboardHunt?.title}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="bg-white rounded-2xl p-6 shadow-inner border border-slate-100">
+            {leaderboardHunt && (
+              <LeaderboardTable huntId={leaderboardHunt.id} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Clues Modal */}
       <Dialog open={!!clueModalHunt} onOpenChange={(open) => !open && setClueModalHunt(null)}>

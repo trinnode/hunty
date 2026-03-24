@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { formatISOString } from "@/lib/dateUtils"
 
 import { Header } from "@/components/Header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -327,7 +328,7 @@ function HuntCard({ hunt }: { hunt: PlayerHuntProgress }) {
             <span>
               Started:{" "}
               <span className="font-medium text-slate-700">
-                {new Date(hunt.startedAt).toLocaleString()}
+                {formatISOString(hunt.startedAt)}
               </span>
             </span>
           )}
@@ -335,7 +336,7 @@ function HuntCard({ hunt }: { hunt: PlayerHuntProgress }) {
             <span>
               Finished:{" "}
               <span className="font-medium text-slate-700">
-                {new Date(hunt.completedAt).toLocaleString()}
+                {formatISOString(hunt.completedAt)}
               </span>
             </span>
           )}

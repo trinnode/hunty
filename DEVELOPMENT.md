@@ -193,21 +193,76 @@ For example:
 
 The classes mean: blue background, white text, padding of 4, and rounded corners. Pretty intuitive once you get the hang of it!
 
-## Testing (Coming Soon)
+## Testing
 
-Right now, we don't have automated tests set up yet, but here's what we're planning:
+We have two layers of automated tests: **unit/component tests** with Vitest and **end-to-end (E2E) tests** with Playwright.
 
-**Component Tests** - Test individual React components in isolation
-**Integration Tests** - Test how components work together
-**E2E Tests** - Test the full user flow from start to finish
+### Unit & Component Tests (Vitest)
 
-For now, we're doing manual testing - just running the app and clicking around to make sure everything works. But as the project grows, we'll definitely want automated tests to catch bugs early.
+Fast, isolated tests for individual components and utilities using [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/).
 
-If you want to set up testing, we'd recommend:
-- **Jest** and **React Testing Library** for component tests
-- **Playwright** or **Cypress** for end-to-end tests
+```bash
+# Run all unit tests once
+pnpm test
 
-Feel free to set this up if you're interested!
+# Watch mode (re-runs on file changes)
+pnpm test:watch
+```
+
+Test files live alongside their source code in `__tests__/` directories (e.g., `components/__tests__/`).
+
+### End-to-End Tests (Playwright)
+
+Full browser-based tests that verify the core game loop works end-to-end. These tests launch a real Next.js dev server and drive a Chromium browser through the entire user flow.
+
+```bash
+# Run all E2E tests (starts dev server automatically)
+pnpm test:e2e
+
+# Run with interactive UI for debugging
+pnpm test:e2e:ui
+```
+
+#### What's Covered
+
+The E2E suite covers the full **Create → Join → Solve → Complete** game loop:
+
+| Test Suite | What It Verifies |
+|---|---|
+| `wallet-connection.spec.ts` | Connect Wallet button, Freighter modal, connected state display, disconnect flow |
+| `hunt-creation.spec.ts` | Navigate to create page, fill clue forms, add multiple clues, publish form validation |
+| `game-loop.spec.ts` | Active hunts displayed, play preview mode, submit correct/incorrect answers, leaderboard toggle |
+| `dashboard.spec.ts` | Dashboard navigation, hunt status badges, Add Clues modal, Activate button, leaderboard access |
+
+#### Mock Wallet Adapter
+
+Since E2E tests run in a real browser without the Freighter extension installed, we use a **mock wallet adapter** (`e2e/helpers/mock-wallet.ts`) that:
+
+- Injects a fake `window.freighter` object so wallet detection succeeds
+- Pre-seeds `localStorage` with a mock public key so the app renders in "connected" state
+- Provides mock `signTransaction` that passes through the XDR (no real signing)
+- Seeds deterministic hunt/clue data in `localStorage` for predictable test scenarios
+
+#### Adding New E2E Tests
+
+1. Create a new `.spec.ts` file in the `e2e/` directory
+2. Import helpers from `e2e/helpers/mock-wallet.ts` as needed
+3. Use `injectMockWallet(page)` in `beforeEach` for tests that need wallet state
+4. Use `seedHuntData(page)` to load deterministic test data
+
+#### CI Integration
+
+The Playwright config (`playwright.config.ts`) is CI-ready:
+- Retries failed tests twice in CI
+- Uses a single worker for stability
+- Auto-starts the Next.js dev server
+- Uses the GitHub reporter for PR annotations
+
+To run in CI, install browsers first:
+```bash
+npx playwright install --with-deps chromium
+pnpm test:e2e
+```
 
 ## When Things Go Wrong (Debugging)
 
