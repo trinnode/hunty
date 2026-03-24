@@ -14,6 +14,7 @@ import { getAllHunts } from "@/lib/huntStore"
 import { LeaderboardTable } from "@/components/LeaderBoardTable"
 import { hankenGrotesk } from "@/lib/font"
 import OnboardingTour from "@/components/OnboardingTour"
+import { GlobalActivityFeed } from "@/components/GlobalActivityFeed"
 
 interface WalletOption {
   id: string
@@ -32,10 +33,8 @@ function fetchAllHunts() {
 export default function GameArcade() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
   const [isConnectingWallet, setIsConnectingWallet] = useState(false)
-  const [selectedWallet, setSelectedWallet] = useState<WalletOption | null>(null)
   const [displayName, setDisplayName] = useState("")
   const [gameLink, setGameLink] = useState("")
-  const [isConnected, setIsConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState("")
   const [balance, setBalance] = useState("")
 
@@ -66,25 +65,16 @@ export default function GameArcade() {
   }, [])
 
   const handleWalletSelect = (wallet: WalletOption) => {
-    setSelectedWallet(wallet)
     setIsConnectingWallet(true)
     // Simulate wallet address generation
     setWalletAddress("0xe5f...E5")
   }
 
   const handleContinue = () => {
-    setIsConnected(true)
     setBalance("24.2453")
     setIsWalletModalOpen(false)
     setIsConnectingWallet(false)
-    setSelectedWallet(null)
     setDisplayName("")
-  }
-
-  const handleDisconnect = () => {
-    setIsConnected(false)
-    setWalletAddress("")
-    setBalance("")
   }
 
   const handleCreateGame = () => {
@@ -226,6 +216,11 @@ export default function GameArcade() {
 
           </div>
 
+        </div>
+
+        {/* Global Activity Feed */}
+        <div className="mt-10 mb-10">
+          <GlobalActivityFeed />
         </div>
 
         {/* Active Hunts Grid */}
