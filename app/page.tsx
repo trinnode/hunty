@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { X, ArrowRight, Trophy } from "lucide-react"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Header } from "@/components/Header"
 import { getAllHunts } from "@/lib/huntStore"
 import { LeaderboardTable } from "@/components/LeaderBoardTable"
@@ -39,6 +40,7 @@ export default function GameArcade() {
 
   const [hunts, setHunts] = useState<ReturnType<typeof fetchAllHunts>>([])
   const [isLoadingHunts, setIsLoadingHunts] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<"leaderboard" | "none">("none")
 
   useEffect(() => {
@@ -78,6 +80,11 @@ export default function GameArcade() {
   const handleCreateGame = () => {
     window.location.href = "/hunty"
   }
+
+  const filteredHunts = hunts.filter((hunt) =>
+    hunt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    hunt.description.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <div
@@ -217,38 +224,51 @@ export default function GameArcade() {
         </div>
 
         {/* Active Hunts Grid */}
-        <div className="mt-2">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mt-10">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
             <h2 className="text-2xl md:text-3xl font-semibold bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent">
               Browse Active Hunts
             </h2>
-            <p className="text-sm text-slate-600">
-              {isLoadingHunts ? "Loading hunts..." : `${hunts.length} active ${hunts.length === 1 ? "hunt" : "hunts"} found`}
-            </p>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Input
+                placeholder="Search hunts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-md bg-slate-50 border-slate-200 focus:border-[#3737A4] focus:ring-[#3737A4]"
+              />
+              <p className="text-sm text-slate-600 whitespace-nowrap hidden sm:block">
+                {isLoadingHunts ? "Loading hunts..." : `${filteredHunts.length} active ${filteredHunts.length === 1 ? "hunt" : "hunts"} found`}
+              </p>
+            </div>
           </div>
 
           {isLoadingHunts ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 4 }).map((_, idx) => (
-                <div
+                <Card
                   key={idx}
-                  className="rounded-2xl border border-slate-200 bg-slate-100/60 p-4 animate-pulse space-y-3"
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                 >
-                  <div className="h-5 w-3/4 bg-slate-200 rounded" />
-                  <div className="h-3 w-full bg-slate-200 rounded" />
-                  <div className="h-3 w-5/6 bg-slate-200 rounded" />
-                  <div className="h-4 w-24 bg-slate-300 rounded-full mt-4" />
-                </div>
+                  <div className="p-5">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full mb-1" />
+                    <Skeleton className="h-4 w-5/6 mb-4" />
+                    <div className="flex items-center justify-between mt-4">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                </Card>
               ))}
             </div>
-          ) : hunts.length === 0 ? (
+          ) : filteredHunts.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 py-10 text-center text-slate-600">
-              No active hunts available right now.{" "}
-              <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>
+              {searchQuery ? "No hunts match your search query." : "No active hunts available right now."}{" "}
+              {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hunts.map((hunt) => (
+              {filteredHunts.map((hunt) => (
                 <Card
                   key={hunt.id}
                   className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"

@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button"
 
 interface CreateGameTabsProps {
-  activeTab: "create" | "rewards" | "publish"
-  onTabChange: (tab: "create" | "rewards" | "publish") => void
+  activeTab: "create" | "rewards" | "publish" | "leaderboard"
+  onTabChange: (tab: "create" | "rewards" | "publish" | "leaderboard") => void
 }
 
 export function CreateGameTabs({ activeTab, onTabChange }: CreateGameTabsProps) {

@@ -3,6 +3,7 @@
 import { ReactNode, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { useLocalStorage } from "@/hooks/useLocalStorage"
 
 import { z } from "zod"
 import { createHunt } from "@/lib/contracts/hunt"
@@ -27,6 +28,12 @@ import ToggleButton from "@/components/ToggleButton"
 import Replay from "@/components/icons/Replay"
 import Medal from "@/components/icons/Medal"
 import { Reward } from "@/components/RewardsPanel"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface Hunt {
   id: number;
@@ -50,25 +57,28 @@ interface LeaderboardEntry {
   icon: ReactNode;
 }
 
-export default function CreateGame() {
-  const [activeTab, setActiveTab] = useState<"create" | "rewards" | "publish">(
-    "create",
-  );
-  const [hunts, setHunts] = useState<Hunt[]>([
-    { id: 1, title: "", description: "", link: "", code: "" },
-  ]);
-  const [rewards, setRewards] = useState<Reward[]>([]);
-  const [gameName, setGameName] = useState("Hunty");
+export default function CreateGame() {  
+  const [activeTab, setActiveTab] = useState<"create" | "rewards" | "publish" | "leaderboard">("create")
+  const [hunts, setHunts] = useLocalStorage<Hunt[]>("draft-hunts", [{ id: 1, title: "", description: "", link: "", code: "" }])
+  const [rewards, setRewards] = useLocalStorage<Reward[]>("draft-rewards", []);
+  const [gameName, setGameName] = useLocalStorage("draft-gameName", "Hunty")
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [timer, setTimer] = useState({ minutes: 0, seconds: 15 });
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [timer, setTimer] = useLocalStorage("draft-timer", { minutes: 0, seconds: 15 })
+  const [startDate, setStartDate] = useLocalStorage("draft-startDate", "")
+  const [endDate, setEndDate] = useLocalStorage("draft-endDate", "")
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [endTime, setEndTime] = useState("00:00 AM");
-  const [showPublishModal, setShowPublishModal] = useState(false);
-  const [showGameCompleteModal, setShowGameCompleteModal] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const router = useRouter();
+  const [endTime, setEndTime] = useLocalStorage("draft-endTime", "00:00 AM")
+  const [showPublishModal, setShowPublishModal] = useState(false)
+  const [showGameCompleteModal, setShowGameCompleteModal] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
+  const router = useRouter()
+
+  const handleShare = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href)
+    }
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isPublishing, setIsPublishing] = useState(false);
   const [huntId, setHuntId] = useState<number>(1); // Default to 1 for preview
@@ -275,7 +285,8 @@ export default function CreateGame() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] pb-28">
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] pb-28">
       <Header balance="24.2453" />
 
       <div className="max-w-[1500px] mx-40 pb-12 bg-white rounded-4xl  relative ">
@@ -480,16 +491,36 @@ export default function CreateGame() {
                       Share Link/Generate QR Code
                     </label>
                     <div className="flex gap-2">
-                      <Button
-                        onClick={handleShare}
-                        className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F]  hover:bg-slate-700 text-white px-4 py-2 rounded-full flex items-center gap-2"
-                      >
-                        <Share />
-                        Share Now
-                      </Button>
-                      <Button size="icon" variant="outline" className="rounded-lg border-1 border-transparent bg-white bg-clip-padding shadow-sm hover:bg-slate-50 [background:linear-gradient(white,white)_padding-box,linear-gradient(to_bottom,#3737A4,#0C0C4F)_border-box]" onClick={() => setQrOpen(true)} title="Show QR Code">
-                        <QrCode className="w-4 h-4 text-[#0C0C4F]" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={handleShare}
+                            className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F]  hover:bg-slate-700 text-white px-4 py-2 rounded-full flex items-center gap-2"
+                          >
+                            <Share />
+                            Share Now
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy Share Link</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="rounded-lg border-1 border-transparent bg-white bg-clip-padding shadow-sm hover:bg-slate-50 [background:linear-gradient(white,white)_padding-box,linear-gradient(to_bottom,#3737A4,#0C0C4F)_border-box]"
+                            onClick={() => setQrOpen(true)}
+                            title="Show QR Code"
+                          >
+                            <QrCode className="w-4 h-4 text-[#0C0C4F]" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Generate QR Code</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
       <QrCodeModal open={qrOpen} onClose={() => setQrOpen(false)} url={typeof window !== "undefined" ? window.location.href : ""} />
@@ -499,17 +530,31 @@ export default function CreateGame() {
                       Save As Image
                     </label>
                     <div className="flex gap-2">
-                      <Button className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] hover:bg-slate-700 text-white px-4 py-2 rounded-full flex items-center gap-2">
-                        <Download className="w-4 h-4 " />
-                        Download
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="rounded-lg border-1 border-transparent bg-white bg-clip-padding shadow-sm hover:bg-slate-50 [background:linear-gradient(white,white)_padding-box,linear-gradient(to_bottom,#3737A4,#0C0C4F)_border-box]"
-                      >
-                        <Printer className="w-4 h-4 text-[#0C0C4F]" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] hover:bg-slate-700 text-white px-4 py-2 rounded-full flex items-center gap-2">
+                            <Download className="w-4 h-4 " />
+                            Download
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Download Scavenge Image</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="rounded-lg border-1 border-transparent bg-white bg-clip-padding shadow-sm hover:bg-slate-50 [background:linear-gradient(white,white)_padding-box,linear-gradient(to_bottom,#3737A4,#0C0C4F)_border-box]"
+                          >
+                            <Printer className="w-4 h-4 text-[#0C0C4F]" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Print Page</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
 
@@ -545,6 +590,7 @@ export default function CreateGame() {
         onPublish={handlePublish}
         gameName={gameName}
       />
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
