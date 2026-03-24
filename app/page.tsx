@@ -41,6 +41,7 @@ export default function GameArcade() {
 
   const [hunts, setHunts] = useState<ReturnType<typeof fetchAllHunts>>([])
   const [isLoadingHunts, setIsLoadingHunts] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<"leaderboard" | "none">("none")
 
   useEffect(() => {
@@ -89,6 +90,11 @@ export default function GameArcade() {
   const handleCreateGame = () => {
     window.location.href = "/hunty"
   }
+
+  const filteredHunts = hunts.filter((hunt) =>
+    hunt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    hunt.description.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <div
@@ -224,13 +230,21 @@ export default function GameArcade() {
 
         {/* Active Hunts Grid */}
         <div className="mt-10">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
             <h2 className="text-2xl md:text-3xl font-semibold bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent">
               Browse Active Hunts
             </h2>
-            <p className="text-sm text-slate-600">
-              {isLoadingHunts ? "Loading hunts..." : `${hunts.length} active ${hunts.length === 1 ? "hunt" : "hunts"} found`}
-            </p>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Input
+                placeholder="Search hunts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-md bg-slate-50 border-slate-200 focus:border-[#3737A4] focus:ring-[#3737A4]"
+              />
+              <p className="text-sm text-slate-600 whitespace-nowrap hidden sm:block">
+                {isLoadingHunts ? "Loading hunts..." : `${filteredHunts.length} active ${filteredHunts.length === 1 ? "hunt" : "hunts"} found`}
+              </p>
+            </div>
           </div>
 
           {isLoadingHunts ? (
@@ -252,14 +266,14 @@ export default function GameArcade() {
                 </Card>
               ))}
             </div>
-          ) : hunts.length === 0 ? (
+          ) : filteredHunts.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 py-10 text-center text-slate-600">
-              No active hunts available right now.{" "}
-              <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>
+              {searchQuery ? "No hunts match your search query." : "No active hunts available right now."}{" "}
+              {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hunts.map((hunt) => (
+              {filteredHunts.map((hunt) => (
                 <Card
                   key={hunt.id}
                   className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
