@@ -351,8 +351,6 @@ export type LeaderboardEntry = {
  * (leveraging the manageData pattern) with a robust mock data fallback.
  */
 export async function get_hunt_leaderboard(huntId: number): Promise<LeaderboardEntry[]> {
-  void huntId
-
   // Simulate network latency
   await new Promise((resolve) => setTimeout(resolve, 800))
 
@@ -364,6 +362,20 @@ export async function get_hunt_leaderboard(huntId: number): Promise<LeaderboardE
     { address: "GFA...789", name: "BobHunts", points: 41 },
     { address: "GCA...HB2", points: 28 },
   ]
+
+  if (typeof window !== "undefined") {
+    try {
+      const myPointsStr = localStorage.getItem(`hunt_${huntId}_my_points`)
+      if (myPointsStr) {
+        const myPoints = parseInt(myPointsStr, 10)
+        if (myPoints > 0) {
+          mockData.push({ address: "YOU...PLYR", name: "You (Current Player)", points: myPoints })
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
 
   return mockData
 }
@@ -405,6 +417,14 @@ export async function get_clue_info(huntId: number, clueId: number): Promise<Clu
     const clue = clues[clueId]
     if (!clue) throw new Error(`Clue ${clueId} not found for hunt ${huntId}`)
 
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(`hunt_clue_start_${huntId}_${clue.id}`, Date.now().toString())
+      } catch (e) {
+        // ignore
+      }
+    }
+
     return {
       id: clue.id,
       question: clue.question,
@@ -434,6 +454,34 @@ export async function submitAnswer(
 
   if (answer.trim().toLowerCase() !== clue.answer.trim().toLowerCase()) {
     throw new AnswerIncorrectError()
+  }
+
+  // Calculate speed bonus
+  let bonusPoints = 0;
+  if (typeof window !== "undefined") {
+    try {
+      const solvedKey = `hunt_clue_solved_${huntId}_${clue.id}`;
+      if (!localStorage.getItem(solvedKey)) {
+        const startTimeStr = localStorage.getItem(`hunt_clue_start_${huntId}_${clue.id}`);
+        if (startTimeStr) {
+          const startTime = parseInt(startTimeStr, 10);
+          const elapsedSeconds = (Date.now() - startTime) / 1000;
+          if (elapsedSeconds < 60) {
+            bonusPoints = Math.floor(60 - elapsedSeconds);
+          }
+        }
+        
+        // Add points to player's total for this hunt
+        const userPointsKey = `hunt_${huntId}_my_points`;
+        const currentPoints = parseInt(localStorage.getItem(userPointsKey) || "0", 10);
+        localStorage.setItem(userPointsKey, (currentPoints + clue.points + bonusPoints).toString());
+        
+        // Mark as solved
+        localStorage.setItem(solvedKey, "true");
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   return {
