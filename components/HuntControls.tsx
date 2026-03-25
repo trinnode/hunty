@@ -117,10 +117,9 @@ function isCreator(
     connectedPublicKey?: string
 ): boolean {
     if (!connectedPublicKey) return false
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!(hunt as any).creator) return true
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (hunt as any).creator === connectedPublicKey
+    const h = hunt as StoredHunt & { creator?: string };
+    if (!h.creator) return true
+    return h.creator === connectedPublicKey
 }
 
 interface CancelModalProps {
@@ -193,7 +192,6 @@ function CancelModal({
                             </span>
                             This action will call{" "}
                             <code className="bg-red-900/50 px-1 rounded text-red-200 text-xs">
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 cancel_hunt({huntId})
                             </code>{" "}
                             on the Soroban contract. Once submitted to the blockchain it{" "}
@@ -239,6 +237,7 @@ export function HuntControls({
     const [modalOpen, setModalOpen] = useState(false)
     const [step, setStep] = useState<1 | 2>(1)
     const [isCancelling, setIsCancelling] = useState(false)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [error, setError] = useState<string | null>(null)
 
     // Gate: only the creator sees this, and only for cancellable statuses

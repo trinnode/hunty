@@ -87,10 +87,9 @@ export default function UserProfilePage() {
         if (!cancelled) {
           setHunts(data)
         }
-      } catch (err: unknown) {
+      } catch (err) {
         if (!cancelled) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setError((err as any)?.message || "Failed to load profile data.")
+          setError(err instanceof Error ? err.message : "Failed to load profile data.")
         }
       } finally {
         if (!cancelled) {

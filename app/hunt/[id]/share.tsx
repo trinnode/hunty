@@ -187,7 +187,8 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
         <HuntControls
           hunt={hunt}
           connectedPublicKey={connectedPublicKey}
-          onCancelled={(huntId) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          onCancelled={(huntId, txHash) => {
             markHuntCancelled(huntId)
             router.push("/hunts")
           }}
