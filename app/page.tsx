@@ -58,7 +58,7 @@ export default function GameArcade() {
     }
   }, [])
 
-  const handleWalletSelect = (wallet: WalletOption) => {
+  const handleWalletSelect = (wallet?: WalletOption) => {
     setIsConnectingWallet(true)
     // Simulate wallet address generation
     setWalletAddress("0xe5f...E5")
