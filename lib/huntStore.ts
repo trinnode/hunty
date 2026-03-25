@@ -148,11 +148,6 @@ export function updateHuntStatus(huntId: number, status: HuntStatus): void {
   writeHunts(hunts)
 }
 
-/** Get hunts for a specific creator */
-export function getHuntsByCreator(): StoredHunt[] {
-  return readHunts() // Mock: returning all for now as we don't have creator mapping yet
-}
-
 /** Get a single hunt by ID */
 export function getHuntById(id: number): StoredHunt | undefined {
   return readHunts().find((h) => h.id === id)
@@ -179,11 +174,6 @@ export function saveClueLocally(clue: Omit<Clue, "id">): void {
     h.id === clue.huntId ? { ...h, cluesCount: h.cluesCount + 1 } : h
   )
   writeHunts(hunts)
-}
-
-/** Get a single hunt by numeric ID */
-export function getHuntById(id: number) {
-  return readHunts().find((h) => h.id === id)
 }
 
 /** Get a single hunt by string ID */
