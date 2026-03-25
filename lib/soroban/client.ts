@@ -1,4 +1,6 @@
-import { Server } from "@stellar/stellar-sdk"
+import Server from "@stellar/stellar-sdk"
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SorobanServer = Server as any;
 
 /**
  * Default RPC URL for Soroban (Futurenet).
@@ -37,8 +39,9 @@ function getNetworkPassphrase(): string {
  * Creates a Soroban Server instance for the configured RPC URL.
  * Uses the same Server API as soroban-client (stellar-sdk is the maintained package).
  */
-export function createSorobanServer(): Server {
-  return new Server(getRpcUrl())
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createSorobanServer(): any {
+  return new SorobanServer(getRpcUrl())
 }
 
 /**

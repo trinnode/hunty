@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -44,67 +45,55 @@ export function PlayGame({
 }: PlayGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [fetchedClues, setFetchedClues] = useState<Hunt[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [solvedClues, setSolvedClues] = useState<Set<number>>(new Set());
-  const [fetchAttempt, setFetchAttempt] = useState(0);
 
   const solvedCount = solvedClues.size;
 
-  useEffect(() => {
-    if (huntId == null) return;
+  const {
+    data: huntData = null,
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ["huntClues", huntId],
+    queryFn: async () => {
+      if (huntId == null) return null;
+      const huntInfo = await get_hunt(huntId);
+      const clues: Hunt[] = [];
 
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setFetchedClues(null);
+      for (let i = 0; i < huntInfo.totalClues; i++) {
+        const clue = await get_clue_info(huntId, i);
+        clues.push({
+          id: clue.id,
+          title: clue.question,
+          description: `${clue.points} pts`,
+          link: "",
+          code: "",
+          points: clue.points,
+          hint: clue.hint,
+          hintCost: clue.hintCost,
+        });
+      }
+      return { clues, metadata: huntInfo };
+    },
+    enabled: huntId != null,
+  });
+
+  const fetchedClues = huntData?.clues ?? null;
+  const huntMetadata = huntData?.metadata ?? null;
+  const error: string | null = queryError instanceof Error ? queryError.message : queryError ? "Failed to fetch clues" : null;
+
+  useEffect(() => {
     setCurrentCardIndex(0);
     setScore(0);
     setSolvedClues(new Set());
+  }, [huntId]);
 
-    async function fetchClues() {
-      try {
-        const huntInfo = await get_hunt(huntId!);
-        const clues: Hunt[] = [];
-
-        for (let i = 0; i < huntInfo.totalClues; i++) {
-          const clue = await get_clue_info(huntId!, i);
-          clues.push({
-            id: clue.id,
-            title: clue.question,
-            description: `${clue.points} pts`,
-            link: "",
-            code: "",
-            points: clue.points,
-            hint: clue.hint,
-            hintCost: clue.hintCost,
-          });
-        }
-
-        if (!cancelled) {
-          setFetchedClues(clues);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const message =
-            err instanceof Error ? err.message : "Failed to fetch clues";
-          setError(message);
-          toast.error(message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
     }
-
-    fetchClues();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [huntId, fetchAttempt]);
+  }, [error]);
 
   const hunts = huntId != null ? fetchedClues ?? [] : fetchedClues ?? huntsProp;
   const hasHunts = hunts.length > 0;
@@ -122,6 +111,19 @@ export function PlayGame({
     if (clueIndex < hunts.length - 1) {
       setCurrentCardIndex(clueIndex + 1);
     } else {
+      // Hunt completed! Trigger notification if enabled
+      if (huntId && huntMetadata?.emailNotifications && huntMetadata?.creatorEmail) {
+        fetch("/api/notifications/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            huntId,
+            huntName: gameName,
+            creatorEmail: huntMetadata.creatorEmail,
+            completionTime: new Date().toLocaleString(),
+          }),
+        }).catch((err) => console.error("Failed to send notification:", err));
+      }
       onGameComplete();
     }
   };
@@ -146,7 +148,7 @@ export function PlayGame({
           <p className="text-red-500 text-lg mb-4">{error}</p>
           <div className="flex items-center justify-center gap-3">
             {huntId != null && (
-              <Button onClick={() => setFetchAttempt((current) => current + 1)}>
+              <Button onClick={() => refetch()}>
                 Retry
               </Button>
             )}

@@ -9,7 +9,7 @@ import { ReactNode, useState } from "react"
 export interface Reward {
   place: number
   amount: number
-  icon: ReactNode
+  icon?: ReactNode
 }
 
 export interface PlayerProgress {

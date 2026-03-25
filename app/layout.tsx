@@ -4,6 +4,7 @@ import "./globals.css"
 import { hankenGrotesk } from "@/lib/font"
 import { TxToaster } from "@/components/TxToaster"
 import { SorobanProvider } from "@/lib/soroban/SorobanContext"
+import { Providers } from "./providers"
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -18,8 +19,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${hankenGrotesk.variable} antialiased`} suppressHydrationWarning>
-        <TxToaster />
-        {children}
+        <Providers>
+          <SorobanProvider>
+            <TxToaster />
+            {children}
+          </SorobanProvider>
+        </Providers>
       </body>
     </html>
   )

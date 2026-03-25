@@ -87,9 +87,9 @@ export default function UserProfilePage() {
         if (!cancelled) {
           setHunts(data)
         }
-      } catch (err: any) {
+      } catch (err) {
         if (!cancelled) {
-          setError(err?.message || "Failed to load profile data.")
+          setError(err instanceof Error ? err.message : "Failed to load profile data.")
         }
       } finally {
         if (!cancelled) {

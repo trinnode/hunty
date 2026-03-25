@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -38,8 +39,6 @@ export default function GameArcade() {
   const [walletAddress, setWalletAddress] = useState("")
   const [balance, setBalance] = useState("")
 
-  const [hunts, setHunts] = useState<ReturnType<typeof fetchAllHunts>>([])
-  const [isLoadingHunts, setIsLoadingHunts] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<"leaderboard" | "none">("none")
 
@@ -52,19 +51,12 @@ export default function GameArcade() {
     }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    try {
-      const active = fetchAllHunts()
-      if (!cancelled) setHunts(active)
-    } catch (error) {
-      console.error("Failed to fetch hunts", error)
-    } finally {
-      if (!cancelled) setIsLoadingHunts(false)
-    }
-  }, [])
+  const { data: hunts = [], isLoading: isLoadingHunts } = useQuery({
+    queryKey: ["activeHunts"],
+    queryFn: fetchAllHunts,
+  })
 
-  const handleWalletSelect = (wallet: WalletOption) => {
+  const handleWalletSelect = () => {
     setIsConnectingWallet(true)
     // Simulate wallet address generation
     setWalletAddress("0xe5f...E5")
@@ -328,7 +320,7 @@ export default function GameArcade() {
                 walletOptions.map((wallet) => (
                   <Button
                     key={wallet.id}
-                    onClick={() => handleWalletSelect(wallet)}
+                    onClick={() => handleWalletSelect()}
                     className="w-full bg-[#0C0C4F] hover:bg-slate-700 text-white p-4 rounded-lg flex items-center gap-3 justify-start px-6 py-6"
                   >
                     <span className="text-xl">{wallet.icon}</span>

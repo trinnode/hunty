@@ -28,7 +28,7 @@ export function GameCompleteModal({
           <DialogTitle className="bg-gradient-to-br from-[#2F2FFF] to-[#E87785] bg-clip-text text-transparent text-2xl font-bold mb-4 text-center">Game Complete</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <p className="bg-gradient-to-b from-[#576065] to-[#787884] bg-clip-text text-transparent text-2xl font-normal">You successfully completed TDH's Crossword</p>
+          <p className="bg-gradient-to-b from-[#576065] to-[#787884] bg-clip-text text-transparent text-2xl font-normal">You successfully completed TDH&apos;s Crossword</p>
           <div className="flex items-center justify-center gap-2 text-2xl">
             <span>🥇</span>
             <span className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent text-2xl font-bold">1st Place</span>

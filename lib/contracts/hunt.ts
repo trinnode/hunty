@@ -16,6 +16,8 @@ export type HuntInfo = {
   description: string
   totalClues: number
   status: string
+  creatorEmail?: string
+  emailNotifications?: boolean
 }
 
 export type CreateHuntResult = {
@@ -92,7 +94,9 @@ export async function createHunt(
   start_time: number,
   end_time: number,
   /** IPFS CID (or ipfs:// URI) for the hunt cover image, stored on-chain. */
-  imageCid?: string
+  imageCid?: string,
+  creatorEmail?: string,
+  emailNotifications?: boolean
 ): Promise<CreateHuntResult> {
   if (typeof window === "undefined") throw new Error("Browser environment required")
 
@@ -120,16 +124,22 @@ export async function createHunt(
     start_time,
     end_time,
     ...(imageCid ? { image_cid: imageCid } : {}),
+    ...(creatorEmail ? { creator_email: creatorEmail } : {}),
+    ...(emailNotifications !== undefined ? { email_notifications: emailNotifications } : {}),
   })
 
   // Ask the wallet for the public key. Different wallets expose slightly
   // different APIs; we try common ones (Freighter, Soroban wallet adapter).
   let publicKey: string | undefined
-  if (wallet.getPublicKey) {
-    publicKey = await wallet.getPublicKey()
-  } else if (wallet.request && typeof wallet.request === "function") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((wallet as any).getPublicKey) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    publicKey = await (wallet as any).getPublicKey()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } else if ((wallet as any).request && typeof (wallet as any).request === "function") {
     try {
-      const resp = await wallet.request({ method: "getPublicKey" })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const resp = await (wallet as any).request({ method: "getPublicKey" })
       publicKey = resp
     } catch {
       // ignore
@@ -160,10 +170,14 @@ export async function createHunt(
   // Wallet signing: errors (including user rejection) are intentionally allowed
   // to propagate so withTransactionToast can classify and display them.
   let signedXdr: string
-  if (wallet.signTransaction) {
-    signedXdr = await wallet.signTransaction(tx.toXDR())
-  } else if (wallet.request && typeof wallet.request === "function") {
-    signedXdr = await wallet.request({ method: "signTransaction", params: { tx: tx.toXDR() } })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((wallet as any).signTransaction) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    signedXdr = await (wallet as any).signTransaction(tx.toXDR())
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } else if ((wallet as any).request && typeof (wallet as any).request === "function") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    signedXdr = await (wallet as any).request({ method: "signTransaction", params: { tx: tx.toXDR() } })
   } else {
     throw new Error("No signing method available. Install Freighter or Soroban Wallet.")
   }
@@ -371,6 +385,8 @@ export async function get_hunt(huntId: number): Promise<HuntInfo> {
       description: stored.description,
       totalClues: stored.cluesCount,
       status: stored.status,
+      creatorEmail: stored.creatorEmail,
+      emailNotifications: stored.emailNotifications,
     }
   } catch (error) {
     throw normalizeHuntFetchError(error, "Failed to fetch hunt")

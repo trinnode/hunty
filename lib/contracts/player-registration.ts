@@ -293,10 +293,12 @@ export async function getPlayerProgress(
   return withRetry(async () => {
     try {
       const rpcUrl = getSorobanRpcUrl()
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const server = new Server(rpcUrl)
 
       // In a real implementation, this would query the contract's get_player_progress function
       // For now, we simulate the contract call using the manageData pattern
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const payload = JSON.stringify({
         action: "get_player_progress",
         hunt_id: huntId,

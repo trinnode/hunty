@@ -15,6 +15,8 @@ export interface StoredHunt {
   startTime?: number
   /** Unix timestamp in seconds — when the hunt ends. */
   endTime?: number
+  creatorEmail?: string
+  emailNotifications?: boolean
 }
 
 export interface Clue {
@@ -133,6 +135,16 @@ export function getCreatorHunts(): StoredHunt[] {
 export function updateHuntStatus(huntId: number, status: HuntStatus): void {
   const hunts = readHunts().map((h) => (h.id === huntId ? { ...h, status } : h))
   writeHunts(hunts)
+}
+
+/** Get hunts for a specific creator */
+export function getHuntsByCreator(): StoredHunt[] {
+  return readHunts() // Mock: returning all for now as we don't have creator mapping yet
+}
+
+/** Get a single hunt by ID */
+export function getHuntById(id: number): StoredHunt | undefined {
+  return readHunts().find((h) => h.id === id)
 }
 
 /** Add a new hunt (e.g. after createHunt). */

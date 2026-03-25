@@ -46,6 +46,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
   ])
   const [isSavingClues, setIsSavingClues] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [linkEnabled, setLinkEnabled] = useState(false)
 
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -202,7 +203,10 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
         <div className="flex items-center justify-between">
           <span className="text-xl font-semibold">Add Link</span>
           <div className="flex gap-2">
-            <ToggleSwitch/>
+            <ToggleSwitch 
+              isActive={linkEnabled} 
+              onClick={() => setLinkEnabled(!linkEnabled)} 
+            />
           </div>
         </div>
         <Input
