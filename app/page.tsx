@@ -16,6 +16,7 @@ import { LeaderboardTable } from "@/components/LeaderBoardTable"
 import { hankenGrotesk } from "@/lib/font"
 import OnboardingTour from "@/components/OnboardingTour"
 import { GlobalActivityFeed } from "@/components/GlobalActivityFeed"
+import { FeaturedHunts } from "@/components/FeaturedHunts"
 
 interface WalletOption {
   id: string
@@ -57,7 +58,7 @@ export default function GameArcade() {
     }
   }, [])
 
-  const handleWalletSelect = (wallet: WalletOption) => {
+  const handleWalletSelect = (wallet?: WalletOption) => {
     setIsConnectingWallet(true)
     // Simulate wallet address generation
     setWalletAddress("0xe5f...E5")
@@ -223,6 +224,9 @@ export default function GameArcade() {
         <div className="mt-10 mb-10">
           <GlobalActivityFeed />
         </div>
+
+        {/* Featured Hunts Hero Section */}
+        <FeaturedHunts />
 
         {/* Active Hunts Grid */}
         <div className="mt-10">

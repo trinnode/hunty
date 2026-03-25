@@ -3,32 +3,9 @@
  * Persisted in localStorage so activated hunts appear in the arcade after refresh.
  */
 
-export type HuntStatus = "Active" | "Completed" | "Draft" | "Cancelled";
+import type { HuntStatus, StoredHunt, Clue } from "@/lib/types"
 
-export interface StoredHunt {
-  id: number
-  title: string
-  description: string
-  cluesCount: number
-  status: HuntStatus
-  rewardType: 'XLM' | 'NFT' | 'Both'
-  /** Unix timestamp in seconds — when the hunt starts. */
-  startTime?: number
-  /** Unix timestamp in seconds — when the hunt ends. */
-  endTime?: number
-  creatorEmail?: string
-  emailNotifications?: boolean
-}
-
-export interface Clue {
-  id: number
-  huntId: number
-  question: string
-  answer: string
-  points: number
-  hint?: string
-  hintCost?: number
-}
+export type { HuntStatus, StoredHunt, Clue }
 
 const STORAGE_KEY = "hunty_hunts"
 const CLUES_KEY = "hunty_clues"
@@ -138,7 +115,7 @@ export function getCreatorHunts(): StoredHunt[] {
 }
 
 /** Get hunts by creator public key (mock implementation) */
-export function getHuntsByCreator(publicKey: string): StoredHunt[] {
+export function getHuntsByCreator(publicKey?: string): StoredHunt[] {
   return readHunts()
 }
 
@@ -146,11 +123,6 @@ export function getHuntsByCreator(publicKey: string): StoredHunt[] {
 export function updateHuntStatus(huntId: number, status: HuntStatus): void {
   const hunts = readHunts().map((h) => (h.id === huntId ? { ...h, status } : h))
   writeHunts(hunts)
-}
-
-/** Get hunts for a specific creator */
-export function getHuntsByCreator(): StoredHunt[] {
-  return readHunts() // Mock: returning all for now as we don't have creator mapping yet
 }
 
 /** Get a single hunt by ID */
@@ -181,12 +153,41 @@ export function saveClueLocally(clue: Omit<Clue, "id">): void {
   writeHunts(hunts)
 }
 
-/** Get a single hunt by numeric ID */
-export function getHuntById(id: number) {
-  return readHunts().find((h) => h.id === id)
-}
-
 /** Get a single hunt by string ID */
 export const getHunt = (id: string) => {
   return readHunts().find((c) => c.id === Number(id))
+}
+
+/**
+ * Return up to `limit` featured hunts, ranked by a trending score.
+ * Score factors: clue count, reward type variety, time remaining, recency.
+ */
+export function getFeaturedHunts(limit = 3): StoredHunt[] {
+  const now = Math.floor(Date.now() / 1000)
+  const active = readHunts().filter((h) => h.status === "Active")
+
+  const scored = active.map((hunt) => {
+    let score = 0
+    // More clues = higher quality hunt
+    score += hunt.cluesCount * 10
+    // Dual-reward hunts are more attractive
+    if (hunt.rewardType === "Both") score += 20
+    else if (hunt.rewardType === "NFT") score += 10
+    // Hunts ending soon get a boost (urgency)
+    if (hunt.endTime) {
+      const hoursLeft = (hunt.endTime - now) / 3600
+      if (hoursLeft > 0 && hoursLeft < 48) score += 15
+    }
+    // Recently started hunts get a freshness boost
+    if (hunt.startTime) {
+      const daysSinceStart = (now - hunt.startTime) / 86400
+      if (daysSinceStart < 3) score += 10
+    }
+    return { hunt, score }
+  })
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((s) => s.hunt)
 }
