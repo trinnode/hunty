@@ -185,8 +185,9 @@ export default function CreateGame() {
         : undefined;
 
       await withTransactionToast(
-        () =>
-          createHunt(
+        async (setStage) => {
+          setStage("approving")
+          return createHunt(
             "",
             gameName,
             description,
@@ -195,11 +196,12 @@ export default function CreateGame() {
             coverImageCid,
             creatorEmail,
             emailNotifications,
-          ),
+          )
+        },
         {
-          loading: "Confirming in Wallet...",
-          submitted: "Transaction Submitted",
-          success: "Success!",
+          pending:   "Pending — preparing your hunt…",
+          approving: "Approving — sign in your wallet…",
+          confirmed: "Hunt created successfully!",
         },
       );
 

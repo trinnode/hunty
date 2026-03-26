@@ -100,8 +100,15 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
       for (const row of valid) {
         const normalizedAnswer = row.answer.trim().toLowerCase()
         await withTransactionToast(
-          () => addClue(huntId, row.question.trim(), normalizedAnswer, row.points, row.hint?.trim() || undefined, row.hintCost),
-          { loading: "Adding clue...", submitted: "Clue submitted", success: "" }
+          async (setStage) => {
+            setStage("approving")
+            return addClue(huntId, row.question.trim(), normalizedAnswer, row.points, row.hint?.trim() || undefined, row.hintCost)
+          },
+          {
+            pending:   "Pending — preparing clue…",
+            approving: "Approving — sign in your wallet…",
+            confirmed: "Clue confirmed!",
+          }
         )
         saveClueLocally({
           huntId,

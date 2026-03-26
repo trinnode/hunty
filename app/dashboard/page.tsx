@@ -24,11 +24,14 @@ export default function DashboardPage() {
 
   const handleActivate = useCallback(async (huntId: number) => {
     await withTransactionToast(
-      () => activateHunt(huntId),
+      async (setStage) => {
+        setStage("approving")
+        return activateHunt(huntId)
+      },
       {
-        loading: "Confirming in Wallet...",
-        submitted: "Transaction Submitted",
-        success: "Hunt activated. It is now visible in the Game Arcade.",
+        pending:   "Pending — preparing transaction…",
+        approving: "Approving — sign in your wallet…",
+        confirmed: "Confirmed! Hunt is now visible in the Game Arcade.",
       }
     )
     updateHuntStatus(huntId, "Active")
@@ -39,11 +42,14 @@ export default function DashboardPage() {
       for (const clue of clues) {
         const normalizedAnswer = clue.answer.trim().toLowerCase()
         await withTransactionToast(
-          () => addClue(huntId, clue.question.trim(), normalizedAnswer, clue.points),
+          async (setStage) => {
+            setStage("approving")
+            return addClue(huntId, clue.question.trim(), normalizedAnswer, clue.points)
+          },
           {
-            loading: `Adding clue "${clue.question.trim().slice(0, 30)}..."`,
-            submitted: "Clue submitted",
-            success: "",
+            pending:   `Pending — preparing clue "${clue.question.trim().slice(0, 30)}…"`,
+            approving: "Approving — sign in your wallet…",
+            confirmed: "Clue confirmed!",
           }
         )
         saveClueLocally({ huntId, question: clue.question.trim(), answer: normalizedAnswer, points: clue.points })
