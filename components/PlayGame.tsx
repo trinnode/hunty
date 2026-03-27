@@ -169,11 +169,13 @@ export function PlayGame({
   const activeHunt = hunts[currentCardIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff]">
-      <Header balance="24.2453" />
+    <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] print:bg-white print:bg-none print:min-h-0">
+      <div className="print:hidden">
+        <Header balance="24.2453" />
+      </div>
 
-      <div className="max-w-[1500px] px-14 pt-10 pb-12 bg-white mx-auto rounded-4xl relative">
-        <div className="flex items-center gap-4 mb-8">
+      <div className="max-w-[1500px] px-14 pt-10 pb-12 bg-white mx-auto rounded-4xl relative print:px-0 print:py-0 print:w-full print:max-w-none print:rounded-none">
+        <div className="flex items-center gap-4 mb-8 print:hidden">
           <Button
             variant="ghost"
             onClick={onExit}
@@ -195,7 +197,7 @@ export function PlayGame({
           </div>
         </div>
 
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 print:hidden">
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#0C0C4F] shadow-lg absolute left-1/2 top-1 -translate-x-1/2 -translate-y-1/2">
             <Image src="/icons/logo.png" alt="Logo" width={96} height={96} />
           </div>
@@ -220,10 +222,10 @@ export function PlayGame({
           </div>
         </div>
 
-        <div className="relative flex justify-center mt-8 min-h-[500px] overflow-x-auto">
-          <div className="relative flex items-start justify-center w-full max-w-none px-8">
+        <div className="relative flex justify-center mt-8 min-h-[500px] overflow-x-auto print:mt-0 print:min-h-0 print:overflow-visible">
+          <div className="relative flex items-start justify-center w-full max-w-none px-8 print:p-0">
             {currentCardIndex > 0 && (
-              <div className="absolute left-0 top-0 flex flex-col gap-4 mr-8">
+              <div className="absolute left-0 top-0 flex flex-col gap-4 mr-8 print:hidden">
                 <div className="opacity-40 scale-60 transform origin-right">
                   <HuntCards
                     hunts={[hunts[currentCardIndex - 1]]}
@@ -253,7 +255,7 @@ export function PlayGame({
             </div>
 
             {currentCardIndex < hunts.length - 1 && (
-              <div className="absolute right-0 top-0 flex flex-col gap-6 ml-8">
+              <div className="absolute right-0 top-0 flex flex-col gap-6 ml-8 print:hidden">
                 {hunts
                   .slice(currentCardIndex + 1, currentCardIndex + 3)
                   .map((hunt, index) => (

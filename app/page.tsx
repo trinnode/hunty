@@ -18,6 +18,7 @@ import OnboardingTour from "@/components/OnboardingTour"
 import { GlobalActivityFeed } from "@/components/GlobalActivityFeed"
 import { FeaturedHunts } from "@/components/FeaturedHunts"
 import { HuntCoverImage } from "@/components/HuntCoverImage"
+import { Footer } from "@/components/Footer"
 
 interface WalletOption {
   id: string
@@ -410,6 +411,8 @@ export default function GameArcade() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Footer />
     </div>
   )
 }

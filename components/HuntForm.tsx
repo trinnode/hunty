@@ -130,8 +130,8 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 print:space-y-0">
+      <div className="flex items-center justify-between print:hidden">
         <h3 className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] text-2xl font-semibold text-transparent bg-clip-text">Hunt {hunt.id}</h3>
         <div className="flex items-center gap-2">
           <Button
@@ -151,9 +151,9 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
       </div>
 
       {showPreview && (
-        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-          <p className="text-xs text-slate-500 mb-3 font-medium">Live Preview</p>
-          <div className="flex justify-center">
+        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 print:bg-white print:border-none print:p-0">
+          <p className="text-xs text-slate-500 mb-3 font-medium print:hidden">Live Preview</p>
+          <div className="flex justify-center print:block">
             <HuntCards
               hunts={[{
                 id: hunt.id,
@@ -170,12 +170,13 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
         </div>
       )}
 
-      <Input
-        placeholder="Title of the Hunt"
-        value={hunt.title}
-        onChange={(e) => onUpdate("title", e.target.value)}
-        className="w-full pl-6 py-3"
-      />
+      <div className="print:hidden space-y-4">
+        <Input
+          placeholder="Title of the Hunt"
+          value={hunt.title}
+          onChange={(e) => onUpdate("title", e.target.value)}
+          className="w-full pl-6 py-3"
+        />
 
         <div className="flex gap-1">
           <Input
@@ -363,6 +364,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
             </Button>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
