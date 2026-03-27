@@ -28,8 +28,9 @@ interface WalletOption {
 const walletOptions: WalletOption[] = []
 
 // Active hunts for the public Game Arcade (Draft hunts become visible here after activation).
+// Private hunts (is_private=true) are excluded from the public arcade.
 function fetchAllHunts() {
-  return getAllHunts().filter((h) => h.status === "Active")
+  return getAllHunts().filter((h) => h.status === "Active" && !h.is_private)
 }
 
 export default function GameArcade() {
@@ -90,7 +91,7 @@ export default function GameArcade() {
 
   return (
     <div
-      className={`min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] pb-[75px]`}
+      className={`min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] dark:from-slate-900 dark:bg-slate-900 dark:to-slate-800 pb-[75px]`}
     >
       <OnboardingTour />
       {/* Header */}
@@ -99,7 +100,7 @@ export default function GameArcade() {
       />
 
       {/* Main Content */}
-      <div className="max-w-[1600px] px-14 pt-10 pb-12 bg-white mx-auto rounded-4xl relative">
+      <div className="max-w-[1600px] px-14 pt-10 pb-12 bg-white dark:bg-slate-900 mx-auto rounded-4xl relative">
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#0C0C4F] shadow-lg absolute left-1/2 top-1 -translate-x-1/2 -translate-y-1/2">
@@ -235,15 +236,15 @@ export default function GameArcade() {
               Browse Active Hunts
             </h2>
             <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-              <div className="flex bg-slate-100 p-1 rounded-xl">
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 {(["all", "XLM", "NFT"] as const).map((type) => (
                   <button
                     key={type}
                     onClick={() => setRewardFilter(type)}
                     className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                       rewardFilter === type
-                        ? "bg-white text-[#3737A4] shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
+                        ? "bg-white dark:bg-slate-700 text-[#3737A4] shadow-sm"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                     }`}
                   >
                     {type === "all" ? "All Rewards" : type}
@@ -254,9 +255,9 @@ export default function GameArcade() {
                 placeholder="Search hunts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-md bg-slate-50 border-slate-200 focus:border-[#3737A4] focus:ring-[#3737A4]"
+                className="max-w-md bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-[#3737A4] focus:ring-[#3737A4]"
               />
-              <p className="text-sm text-slate-600 whitespace-nowrap hidden sm:block">
+              <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap hidden sm:block">
                 {isLoadingHunts ? "Loading hunts..." : `${filteredHunts.length} active ${filteredHunts.length === 1 ? "hunt" : "hunts"} found`}
               </p>
             </div>
@@ -282,7 +283,7 @@ export default function GameArcade() {
               ))}
             </div>
           ) : filteredHunts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 py-10 text-center text-slate-600">
+            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/80 dark:bg-slate-800/50 py-10 text-center text-slate-600 dark:text-slate-400">
               {searchQuery ? "No hunts match your search query." : "No active hunts available right now."}{" "}
               {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
             </div>
@@ -291,13 +292,13 @@ export default function GameArcade() {
               {filteredHunts.map((hunt) => (
                 <Card
                   key={hunt.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
+                  className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="p-5">
-                    <CardTitle className="text-lg font-semibold mb-2 line-clamp-2">
+                    <CardTitle className="text-lg font-semibold mb-2 line-clamp-2 dark:text-slate-100">
                       {hunt.title}
                     </CardTitle>
-                    <CardDescription className="text-sm text-slate-600 mb-4 line-clamp-3">
+                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-3">
                       {hunt.description}
                     </CardDescription>
                     <div className="flex items-center justify-between mt-4">

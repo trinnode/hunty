@@ -104,12 +104,17 @@ function writeHunts(hunts: StoredHunt[]): void {
   }
 }
 
-/** All hunts (for Game Arcade: filter by status === "Active"). */
+/** All hunts (for Game Arcade: filter by status === "Active"). Private hunts are excluded. */
 export function getAllHunts(): StoredHunt[] {
+  return readHunts().filter((h) => !h.is_private)
+}
+
+/** All hunts including private ones (for creator dashboard). */
+export function getAllHuntsIncludingPrivate(): StoredHunt[] {
   return readHunts()
 }
 
-/** Creator hunts for dashboard (all stored hunts; creator filter can be added later). */
+/** Creator hunts for dashboard (all stored hunts including private; creator filter can be added later). */
 export function getCreatorHunts(): StoredHunt[] {
   return readHunts()
 }
@@ -164,7 +169,7 @@ export const getHunt = (id: string) => {
  */
 export function getFeaturedHunts(limit = 3): StoredHunt[] {
   const now = Math.floor(Date.now() / 1000)
-  const active = readHunts().filter((h) => h.status === "Active")
+  const active = readHunts().filter((h) => h.status === "Active" && !h.is_private)
 
   const scored = active.map((hunt) => {
     let score = 0

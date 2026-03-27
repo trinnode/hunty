@@ -47,6 +47,7 @@ export default function CreateGame() {
   const [creatorEmail, setCreatorEmail] = useState("")
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [timerEnabled, setTimerEnabled] = useState(false)
+  const [isPrivate, setIsPrivate] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false);
   const router = useRouter()
 
@@ -196,6 +197,7 @@ export default function CreateGame() {
             coverImageCid,
             creatorEmail,
             emailNotifications,
+            isPrivate,
           )
         },
         {
@@ -223,10 +225,10 @@ export default function CreateGame() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] pb-28">
+      <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] dark:from-slate-900 dark:bg-slate-900 dark:to-slate-800 pb-28">
         <Header balance="24.2453" />
 
-        <div className="max-w-[1500px] mx-auto px-40 pb-12 bg-white rounded-4xl relative mt-4">
+        <div className="max-w-[1500px] mx-auto px-40 pb-12 bg-white dark:bg-slate-900 rounded-4xl relative mt-4">
           <div className="pt-24 px-12 pb-12">
             <div className="flex justify-between items-center mb-10">
               <Button
@@ -408,6 +410,16 @@ export default function CreateGame() {
                             Timer
                           </label>
                           <ToggleButton isActive={timerEnabled} onClick={() => setTimerEnabled(!timerEnabled)} />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="block text-xl font-normal text-[#808080]">
+                              Private Hunt
+                            </label>
+                            <p className="text-xs text-slate-400 mt-0.5">Hidden from the public arcade</p>
+                          </div>
+                          <ToggleButton isActive={isPrivate} onClick={() => setIsPrivate(!isPrivate)} />
                         </div>
 
                         <div className="flex items-center justify-between">
