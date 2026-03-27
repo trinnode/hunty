@@ -7,6 +7,7 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { useFreighterWallet } from "@/hooks/useFreighterWallet";
 import { WalletModal } from "./WalletModal";
 import { Copy, LogOut, Check } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header({ balance = "0" }: { balance?: string }) {
   const mounted = useIsMounted();
@@ -51,6 +52,8 @@ export function Header({ balance = "0" }: { balance?: string }) {
         <div className="font-normal text-xl sm:text-2xl md:text-3xl lg:text-4xl bg-gradient-to-br from-[#2F2FFF] to-[#E87785] bg-clip-text text-transparent flex-shrink-0">
           Hunty
         </div>
+
+        <ThemeToggle />
 
         {mounted && connected ? (
           <div className="flex flex-row items-center gap-2 sm:gap-4 min-w-0 w-full sm:w-auto flex-1 justify-between sm:justify-end">
