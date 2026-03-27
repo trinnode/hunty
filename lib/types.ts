@@ -22,6 +22,8 @@ export interface StoredHunt {
   endTime?: number
   creatorEmail?: string
   emailNotifications?: boolean
+  /** When true, the hunt is hidden from the public arcade grid. */
+  is_private?: boolean
 }
 
 export type HuntInfo = {

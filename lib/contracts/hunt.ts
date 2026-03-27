@@ -73,7 +73,9 @@ export async function createHunt(
   /** IPFS CID (or ipfs:// URI) for the hunt cover image, stored on-chain. */
   imageCid?: string,
   creatorEmail?: string,
-  emailNotifications?: boolean
+  emailNotifications?: boolean,
+  /** When true, the hunt is hidden from the public arcade. */
+  is_private?: boolean
 ): Promise<CreateHuntResult> {
   if (typeof window === "undefined") throw new Error("Browser environment required")
 
@@ -102,6 +104,7 @@ export async function createHunt(
     ...(imageCid ? { image_cid: imageCid } : {}),
     ...(creatorEmail ? { creator_email: creatorEmail } : {}),
     ...(emailNotifications !== undefined ? { email_notifications: emailNotifications } : {}),
+    ...(is_private ? { is_private: true } : {}),
   })
 
   // Ask the wallet for the public key. Different wallets expose slightly
