@@ -42,5 +42,10 @@ export async function claimReward(huntId: number): Promise<ClaimRewardResult> {
   const signedXdr = await wallet.signTransaction(tx.toXDR())
   const result = await server.submitTransaction(signedXdr)
   if (!result?.hash) throw new Error("Reward claim transaction failed")
+  
+  if (typeof window !== "undefined") {
+    localStorage.setItem(`hunt_reward_claimed_${huntId}`, "true");
+  }
+
   return { txHash: result.hash }
 }

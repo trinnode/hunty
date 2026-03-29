@@ -20,9 +20,10 @@ interface PlayGameProps {
   hunts: Hunt[];
   gameName: string;
   onExit: () => void;
-  onGameComplete: () => void;
-  gameCompleteModal: React.ReactNode;
+  onGameComplete: (score: number) => void;
+  gameCompleteModal?: React.ReactNode;
   huntId?: number;
+  playerAddress?: string;
 }
 
 export function PlayGame({
@@ -32,6 +33,7 @@ export function PlayGame({
   onGameComplete,
   gameCompleteModal,
   huntId,
+  playerAddress,
 }: PlayGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -114,7 +116,10 @@ export function PlayGame({
           }),
         }).catch((err) => console.error("Failed to send notification:", err));
       }
-      onGameComplete();
+      if (huntId) {
+        localStorage.setItem(`hunt_completed_${huntId}`, "true");
+      }
+      onGameComplete(score);
     }
   };
 

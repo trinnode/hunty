@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Coin from "@/components/icons/Coin"
 import Replay from "@/components/icons/Replay"
+import { RewardsPanel } from "@/components/RewardsPanel"
+import { useQuery } from "@tanstack/react-query"
+import { checkRegistrationStatus } from "@/lib/contracts/player-registration"
+
 interface GameCompleteModalProps {
   isOpen: boolean
   onClose: () => void
@@ -14,6 +18,8 @@ interface GameCompleteModalProps {
   onReplay: () => void
   onViewLeaderboard: () => void
   reward: number
+  huntId?: number
+  playerAddress?: string
 }
 
 export function GameCompleteModal({
@@ -23,7 +29,21 @@ export function GameCompleteModal({
   onReplay,
   onViewLeaderboard,
   reward,
+  huntId,
+  playerAddress,
 }: GameCompleteModalProps) {
+  const { data: registrationStatus } = useQuery({
+    queryKey: ["registrationStatus", huntId, playerAddress],
+    queryFn: () => (huntId && playerAddress ? checkRegistrationStatus(huntId, playerAddress) : null),
+    enabled: isOpen && !!huntId && !!playerAddress,
+  });
+
+  const playerProgress = registrationStatus?.progressData ? {
+    is_completed: registrationStatus.progressData.completed,
+    reward_claimed: registrationStatus.progressData.reward_claimed,
+    hunt_id: huntId
+  } : undefined;
+
   useEffect(() => {
     if (isOpen) {
       confetti({
@@ -54,6 +74,15 @@ export function GameCompleteModal({
               <span className="font-bold text-lg">{reward}</span>
             </div>
           </div>
+
+          {playerProgress && (
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              <RewardsPanel
+                rewards={[]}
+                playerProgress={playerProgress}
+              />
+            </div>
+          )}
          
           <div className="flex gap-4">
             <div className="flex-1 p-[2px] bg-gradient-to-br from-[#4A4AFF] to-[#0C0C4F] rounded-xl">

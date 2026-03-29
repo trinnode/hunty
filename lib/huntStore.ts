@@ -130,6 +130,25 @@ export function updateHuntStatus(huntId: number, status: HuntStatus): void {
   writeHunts(hunts)
 }
 
+/** Delete multiple hunts by IDs. */
+export function deleteHunts(ids: number[]): void {
+  const hunts = readHunts().filter((h) => !ids.includes(h.id))
+  writeHunts(hunts)
+  
+  // Also clean up clues for these hunts
+  const allClues = readClues()
+  const remainingClues = allClues.filter((c) => !ids.includes(c.huntId))
+  writeClues(remainingClues)
+}
+
+/** Archive (Cancel) multiple hunts by IDs. */
+export function archiveHunts(ids: number[]): void {
+  const hunts = readHunts().map((h) => 
+    ids.includes(h.id) ? { ...h, status: "Cancelled" as HuntStatus } : h
+  )
+  writeHunts(hunts)
+}
+
 /** Get a single hunt by ID */
 export function getHuntById(id: number): StoredHunt | undefined {
   return readHunts().find((h) => h.id === id)

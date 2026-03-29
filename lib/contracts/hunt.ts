@@ -313,7 +313,10 @@ export async function submitAnswer(
   const clue = clues.find((c) => c.id === clueId)
   if (!clue) throw new Error(`Clue ${clueId} not found for hunt ${huntId}`)
 
-  if (answer.trim().toLowerCase() !== clue.answer.trim().toLowerCase()) {
+  const userAnswer = answer.trim().toLowerCase()
+  const possibleAnswers = clue.answer.toLowerCase().split("|").map((a) => a.trim())
+
+  if (!possibleAnswers.includes(userAnswer)) {
     throw new AnswerIncorrectError()
   }
 

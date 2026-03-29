@@ -173,16 +173,18 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
       <div className="print:hidden space-y-4">
         <Input
           placeholder="Title of the Hunt"
+          aria-label="Title of the Hunt"
           value={hunt.title}
-          onChange={(e) => onUpdate("title", e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate("title", e.target.value)}
           className="w-full pl-6 py-3"
         />
 
         <div className="flex gap-1">
           <Input
             placeholder="Description"
+            aria-label="Hunt Description"
             value={hunt.description}
-            onChange={(e) => onUpdate("description", e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate("description", e.target.value)}
             className="w-full pl-6 py-3"
           />
         <div className="relative">
@@ -228,8 +230,9 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
         </div>
         <Input
           placeholder="Enter Code to Unlock next challenge"
+          aria-label="Unlock Code"
           value={hunt.code}
-          onChange={(e) => onUpdate("code", e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onUpdate("code", e.target.value)}
           className="w-full pl-6 py-3"
         />
       </div>
@@ -263,6 +266,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                     render={({ field: f }) => (
                       <Input
                         placeholder="Riddle / Question"
+                        aria-label={`Clue ${index + 1} Question`}
                         {...f}
                         className="pl-3 py-2 text-sm"
                       />
@@ -273,12 +277,13 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                   )}
                 </div>
                 <div className="w-32 flex flex-col">
-                  <Controller
+                    <Controller
                     control={control}
                     name={`clues.${index}.answer`}
                     render={({ field: f }) => (
                       <Input
-                        placeholder="Answer"
+                        placeholder="Answer (use | for multiple)"
+                        aria-label={`Clue ${index + 1} Answer`}
                         {...f}
                         className="pl-3 py-2 text-sm"
                       />
@@ -296,6 +301,7 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                       <Input
                         type="number"
                         placeholder="Pts"
+                        aria-label={`Clue ${index + 1} Points`}
                         min={1}
                         value={f.value}
                         onChange={(e) => f.onChange(parseInt(e.target.value, 10) || 0)}

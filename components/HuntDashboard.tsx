@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Trash2, Trophy, Copy } from "lucide-react"
+import { Plus, Trash2, Trophy, Copy, CheckSquare, Square, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import { ActivateHuntModal } from "@/components/ActivateHuntModal"
 import { LeaderboardTable } from "@/components/LeaderBoardTable"
 import Link from "next/link"
 import { toast } from "sonner"
+import { deleteHunts, archiveHunts } from "@/lib/huntStore"
 
 interface HuntDashboardProps {
   hunts: StoredHunt[]
@@ -41,6 +43,7 @@ function StatusBadge({ status }: { status: StoredHunt["status"] }) {
 }
 
 export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: HuntDashboardProps) {
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [modalHunt, setModalHunt] = useState<StoredHunt | null>(null)
   const [activatingId, setActivatingId] = useState<number | null>(null)
   const [clueModalHunt, setClueModalHunt] = useState<StoredHunt | null>(null)
@@ -49,6 +52,39 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
     { id: 1, question: "", answer: "", points: 10 },
   ])
   const [isSavingClues, setIsSavingClues] = useState(false)
+
+  const toggleSelect = (id: number) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === hunts.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(hunts.map((h) => h.id)))
+    }
+  }
+
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return
+    if (confirm(`Are you sure you want to delete ${selectedIds.size} hunts?`)) {
+      deleteHunts(Array.from(selectedIds))
+      setSelectedIds(new Set())
+      onRefresh()
+      toast.success("Hunts deleted successfully")
+    }
+  }
+
+  const handleBatchArchive = () => {
+    if (selectedIds.size === 0) return
+    archiveHunts(Array.from(selectedIds))
+    setSelectedIds(new Set())
+    onRefresh()
+    toast.success("Hunts archived successfully")
+  }
 
   const handleCopyId = (e: React.MouseEvent, id: number) => {
     e.preventDefault()
@@ -112,6 +148,56 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
 
   return (
     <>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="select-all"
+            checked={selectedIds.size === hunts.length && hunts.length > 0}
+            onCheckedChange={toggleSelectAll}
+          />
+          <label
+            htmlFor="select-all"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Select All
+          </label>
+        </div>
+
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+            <span className="text-sm font-medium text-slate-500">
+              {selectedIds.size} selected
+            </span>
+            <div className="h-4 w-[1px] bg-slate-200" />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBatchArchive}
+              className="h-8 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+            >
+              Archive
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBatchDelete}
+              className="h-8 border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              Delete
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-8 px-2 text-slate-500"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {hunts.map((hunt) => {
           const isDraft = hunt.status === "Draft"
@@ -123,8 +209,21 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
           return (
             <Card
               key={hunt.id}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+              className={`group relative overflow-hidden rounded-2xl border transition-all ${
+                selectedIds.has(hunt.id)
+                  ? "border-blue-400 bg-blue-50/30 ring-1 ring-blue-400"
+                  : "border-slate-200 bg-white hover:border-slate-300 shadow-sm"
+              }`}
             >
+              <div className="absolute right-3 top-3 z-10">
+                <Checkbox
+                  checked={selectedIds.has(hunt.id)}
+                  onCheckedChange={() => toggleSelect(hunt.id)}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  className="h-5 w-5 rounded-md border-slate-300"
+                  aria-label={`Select hunt ${hunt.title}`}
+                />
+              </div>
               <Link href={`/hunt/${hunt.id}`}>
               <div className="p-5">
                 <div className="mb-2 flex items-center justify-between gap-2">
@@ -247,7 +346,7 @@ export function HuntDashboard({ hunts, onActivate, onRefresh, onSaveClues }: Hun
                   />
                 </div>
                 <Input
-                  placeholder="keyboard"
+                  placeholder="Answer (e.g. keyboard|laptop)"
                   value={row.answer}
                   onChange={(e) => updateClueRow(row.id, "answer", e.target.value)}
                   className="pl-3 py-2 text-sm"

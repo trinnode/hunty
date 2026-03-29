@@ -83,8 +83,8 @@ export async function injectMockWallet(page: Page) {
       );
     });
 
-    // 4. Also expose window.freighter object for lib/contracts/hunt.ts
-    (window as any).freighter = {
+    // 4. Also expose window wallet objects for lib/contracts/hunt.ts and player-registration.ts
+    const mockWallet = {
       isConnected: true,
       getPublicKey: () => Promise.resolve(publicKey),
       signTransaction: (xdr: string) => Promise.resolve(xdr),
@@ -93,6 +93,9 @@ export async function injectMockWallet(page: Page) {
         return Promise.resolve(null);
       },
     };
+    (window as any).freighter = mockWallet;
+    (window as any).soroban = mockWallet;
+    (window as any).sorobanWallet = mockWallet;
   }, MOCK_PUBLIC_KEY);
 }
 

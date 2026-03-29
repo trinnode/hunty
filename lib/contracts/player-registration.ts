@@ -273,18 +273,25 @@ export async function getPlayerProgress(
 
       // In a real implementation, this would query the contract's get_player_progress function
       // For now, we simulate the contract call using the manageData pattern
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const payload = JSON.stringify({
-        action: "get_player_progress",
-        hunt_id: huntId,
-        player: playerAddress,
-      })
+      if (typeof window !== "undefined") {
+        const userPointsKey = `hunt_${huntId}_my_points`;
+        const hasPoints = localStorage.getItem(userPointsKey) !== null;
+        
+        if (hasPoints) {
+          // If the player has points, they are registered
+          const isCompleted = localStorage.getItem(`hunt_completed_${huntId}`) === "true";
+          const isClaimed = localStorage.getItem(`hunt_reward_claimed_${huntId}`) === "true";
+          
+          return {
+            hunt_id: huntId,
+            player: playerAddress,
+            current_clue_index: 0, // Not strictly used for the claim check
+            completed: isCompleted,
+            reward_claimed: isClaimed,
+          };
+        }
+      }
 
-      // Simulate network latency
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
-      // Mock response - in production this would parse the contract response
-      // Return null to indicate player is not registered
       return null
     } catch (error) {
       // Provide user-friendly error messages

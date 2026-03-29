@@ -20,7 +20,9 @@ export default function RootLayout({
       <body className={`${hankenGrotesk.variable} antialiased`} suppressHydrationWarning>
         <Providers>
           <TxToaster />
-          {children}
+          <main>
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

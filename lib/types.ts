@@ -109,6 +109,7 @@ export type PlayerProgress = {
   player: string
   current_clue_index: number
   completed: boolean
+  reward_claimed: boolean
 }
 
 export type RegistrationStatus = {
