@@ -1,34 +1,9 @@
 import Server, { TransactionBuilder, Operation } from "@stellar/stellar-sdk"
 import { getSorobanNetworkPassphrase, getSorobanRpcUrl } from "../soroban/client"
 
-/**
- * Player progress data structure returned by the contract
- */
-export type PlayerProgress = {
-  hunt_id: number
-  player: string
-  current_clue_index: number
-  completed: boolean
-}
+import type { PlayerProgress, RegistrationStatus, RegistrationResult } from "@/lib/types"
 
-/**
- * Registration status information
- */
-export type RegistrationStatus = {
-  isRegistered: boolean
-  progressData?: PlayerProgress
-  loading: boolean
-  error?: string
-}
-
-/**
- * Result of a registration attempt
- */
-export type RegistrationResult = {
-  success: boolean
-  error?: string
-  transactionHash?: string
-}
+export type { PlayerProgress, RegistrationStatus, RegistrationResult }
 
 /**
  * Custom error for registration failures
@@ -293,10 +268,12 @@ export async function getPlayerProgress(
   return withRetry(async () => {
     try {
       const rpcUrl = getSorobanRpcUrl()
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const server = new Server(rpcUrl)
 
       // In a real implementation, this would query the contract's get_player_progress function
       // For now, we simulate the contract call using the manageData pattern
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const payload = JSON.stringify({
         action: "get_player_progress",
         hunt_id: huntId,

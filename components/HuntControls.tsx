@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { AlertTriangle, X, Loader2 } from "lucide-react"
-import { StoredHunt } from "@/lib/huntStore"
+import type { StoredHunt } from "@/lib/types"
 import Server, { TransactionBuilder, Networks, Operation } from "@stellar/stellar-sdk"
 
 async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
@@ -117,13 +117,15 @@ function isCreator(
     connectedPublicKey?: string
 ): boolean {
     if (!connectedPublicKey) return false
-    if (!(hunt as any).creator) return true
-    return (hunt as any).creator === connectedPublicKey
+    const h = hunt as StoredHunt & { creator?: string };
+    if (!h.creator) return true
+    return h.creator === connectedPublicKey
 }
 
 interface CancelModalProps {
     isOpen: boolean
     huntTitle: string
+    huntId: number
     isCancelling: boolean
     onClose: () => void
     onConfirmFirst: () => void   // step 1 → move to step 2
@@ -134,6 +136,7 @@ interface CancelModalProps {
 function CancelModal({
     isOpen,
     huntTitle,
+    huntId,
     isCancelling,
     onClose,
     onConfirmFirst,
@@ -157,7 +160,7 @@ function CancelModal({
                     <div className="space-y-4">
                         <p className="text-zinc-300 text-sm leading-relaxed">
                             You are about to cancel{" "}
-                            <span className="font-semibold text-white">"{huntTitle}"</span>.
+                            <span className="font-semibold text-white">&quot;{huntTitle}&quot;</span>.
                             This will remove it from the active hunts list and cannot be undone.
                         </p>
                         <ul className="text-xs text-zinc-500 space-y-1 list-disc list-inside">
@@ -189,7 +192,7 @@ function CancelModal({
                             </span>
                             This action will call{" "}
                             <code className="bg-red-900/50 px-1 rounded text-red-200 text-xs">
-                                cancel_hunt({(huntTitle as any)?.id ?? "…"})
+                                cancel_hunt({huntId})
                             </code>{" "}
                             on the Soroban contract. Once submitted to the blockchain it{" "}
                             <span className="font-semibold text-white">cannot be reversed</span>.
@@ -234,6 +237,7 @@ export function HuntControls({
     const [modalOpen, setModalOpen] = useState(false)
     const [step, setStep] = useState<1 | 2>(1)
     const [isCancelling, setIsCancelling] = useState(false)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [error, setError] = useState<string | null>(null)
 
     // Gate: only the creator sees this, and only for cancellable statuses
@@ -288,6 +292,7 @@ export function HuntControls({
             <CancelModal
                 isOpen={modalOpen}
                 huntTitle={hunt.title}
+                huntId={hunt.id}
                 isCancelling={isCancelling}
                 onClose={closeModal}
                 onConfirmFirst={handleConfirmFirst}

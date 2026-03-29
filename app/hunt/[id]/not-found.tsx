@@ -15,7 +15,7 @@ export default function NotFound() {
         <div className="text-6xl mb-6" aria-hidden="true">🌿</div>
         <h1 className="font-display text-3xl font-bold text-cream mb-3">Hunt Not Found</h1>
         <p className="text-stone-500 text-sm mb-8 leading-relaxed font-body">
-          This hunt may have moved or doesn't exist.
+          This hunt may have moved or doesn&apos;t exist.
         </p>
         <div className="flex gap-3 justify-center">
           <Link href="/dashboard" className="btn-stellar-green-sm">Browse Hunts</Link>

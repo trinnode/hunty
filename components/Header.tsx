@@ -7,10 +7,11 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { useFreighterWallet } from "@/hooks/useFreighterWallet";
 import { WalletModal } from "./WalletModal";
 import { Copy, LogOut, Check } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header({ balance = "0" }: { balance?: string }) {
   const mounted = useIsMounted();
-  const { connected, displayKey, publicKey, connect, disconnect } =
+  const { connected, displayKey, publicKey, connect, disconnect, walletProvider } =
     useFreighterWallet();
   const [modalOpen, setModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -51,6 +52,8 @@ export function Header({ balance = "0" }: { balance?: string }) {
         <div className="font-normal text-xl sm:text-2xl md:text-3xl lg:text-4xl bg-gradient-to-br from-[#2F2FFF] to-[#E87785] bg-clip-text text-transparent flex-shrink-0">
           Hunty
         </div>
+
+        <ThemeToggle />
 
         {mounted && connected ? (
           <div className="flex flex-row items-center gap-2 sm:gap-4 min-w-0 w-full sm:w-auto flex-1 justify-between sm:justify-end">
@@ -102,6 +105,9 @@ export function Header({ balance = "0" }: { balance?: string }) {
                     <p className="text-xs text-blue-200 font-medium mb-1">
                       Connected wallet
                     </p>
+                    <p className="text-[11px] uppercase tracking-wide text-blue-200/90 mb-1">
+                      {walletProvider ?? "freighter"}
+                    </p>
                     <p className="text-white font-mono text-xs break-all leading-relaxed">
                       {publicKey}
                     </p>
@@ -149,7 +155,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
       <WalletModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        onConnect={connect}
+        onConnect={(provider) => connect(provider)}
       />
     </>
   );

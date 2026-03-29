@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import React, { useState } from "react";
+import { Check, X } from "lucide-react";
+import { cva } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
 type CustomToggleProps = {
   initialValue?: boolean;
@@ -7,65 +9,86 @@ type CustomToggleProps = {
   disabled?: boolean;
 };
 
-const CustomToggle = ({ initialValue = false, onChange, disabled = false }: CustomToggleProps) => {
+const trackVariants = cva(
+  "relative inline-flex items-center h-8 w-16 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2",
+  {
+    variants: {
+      checked: {
+        true: "bg-gradient-to-r from-green-500 to-green-600 shadow-lg shadow-green-200 focus:ring-green-500",
+        false: "bg-gradient-to-r from-red-500 to-red-600 shadow-lg shadow-red-200 focus:ring-red-500",
+      },
+      disabled: {
+        true: "opacity-50 cursor-not-allowed",
+        false: "cursor-pointer",
+      },
+    },
+    defaultVariants: {
+      checked: false,
+      disabled: false,
+    },
+  }
+);
+
+const thumbVariants = cva(
+  "absolute top-0.5 left-0.5 h-7 w-7 bg-white rounded-full shadow-md flex items-center justify-center transform transition-transform duration-300 ease-in-out",
+  {
+    variants: {
+      checked: {
+        true: "translate-x-8",
+        false: "translate-x-0",
+      },
+    },
+    defaultVariants: { checked: false },
+  }
+);
+
+const CustomToggle = ({
+  initialValue = false,
+  onChange,
+  disabled = false,
+}: CustomToggleProps) => {
   const [isToggled, setIsToggled] = useState(initialValue);
 
   const handleToggle = () => {
     if (disabled) return;
-    const newValue = !isToggled;
-    setIsToggled(newValue);
-    if (onChange) onChange(newValue);
+    const next = !isToggled;
+    setIsToggled(next);
+    onChange?.(next);
   };
 
   return (
     <button
-    onClick={handleToggle}
-    disabled={disabled}
-    className={`
-      relative inline-flex items-center h-8 w-16 rounded-full transition-all duration-300 ease-in-out
-      ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-      ${isToggled 
-        ? 'bg-gradient-to-r from-green-500 to-green-600 shadow-lg shadow-green-200' 
-        : 'bg-gradient-to-r from-red-500 to-red-600 shadow-lg shadow-red-200'
-      }
-      hover:${isToggled ? 'from-green-600 to-green-700' : 'from-red-600 to-red-700'}
-      focus:outline-none focus:ring-2 focus:ring-offset-2 
-      ${isToggled ? 'focus:ring-green-500' : 'focus:ring-red-500'}
-    `}
-  >
-    {/* Toggle Slider */}
-    <div
-      className={`
-        absolute top-0.5 left-0.5 h-7 w-7 bg-white rounded-full shadow-md
-        transform transition-transform duration-300 ease-in-out
-        flex items-center justify-center
-        ${isToggled ? 'translate-x-8' : 'translate-x-0'}
-      `}
+      onClick={handleToggle}
+      disabled={disabled}
+      className={cn(trackVariants({ checked: isToggled, disabled }))}
     >
-      {/* Icon */}
-      {isToggled ? (
-        <Check className="h-4 w-4 text-green-600" strokeWidth={3} />
-      ) : (
-        <X className="h-4 w-4 text-red-600" strokeWidth={3} />
-      )}
-    </div>
-    
-    {/* Background Icons (Optional - for extra visual appeal) */}
-    <div className="absolute inset-0 flex items-center justify-between px-2">
-      <Check 
-        className={`h-4 w-4 text-white transition-opacity duration-200 ${
-          isToggled ? 'opacity-100' : 'opacity-40'
-        }`} 
-        strokeWidth={2}
-      />
-      <X 
-        className={`h-4 w-4 text-white transition-opacity duration-200 ${
-          !isToggled ? 'opacity-100' : 'opacity-40'
-        }`} 
-        strokeWidth={2}
-      />
-    </div>
-  </button>
+      {/* Sliding thumb */}
+      <div className={cn(thumbVariants({ checked: isToggled }))}>
+        {isToggled ? (
+          <Check className="h-4 w-4 text-green-600" strokeWidth={3} />
+        ) : (
+          <X className="h-4 w-4 text-red-600" strokeWidth={3} />
+        )}
+      </div>
+
+      {/* Background icon hints */}
+      <div className="absolute inset-0 flex items-center justify-between px-2">
+        <Check
+          className={cn(
+            "h-4 w-4 text-white transition-opacity duration-200",
+            isToggled ? "opacity-100" : "opacity-40"
+          )}
+          strokeWidth={2}
+        />
+        <X
+          className={cn(
+            "h-4 w-4 text-white transition-opacity duration-200",
+            !isToggled ? "opacity-100" : "opacity-40"
+          )}
+          strokeWidth={2}
+        />
+      </div>
+    </button>
   );
 };
 

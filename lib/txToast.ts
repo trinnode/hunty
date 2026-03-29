@@ -1,48 +1,87 @@
 import { toast } from "sonner"
 import { parseStellarError } from "@/lib/stellarErrors"
 
-type TxToastMessages = {
-  loading?: string
-  submitted?: string
-  success?: string
-}
+// ─── Stage type ───────────────────────────────────────────────────────────────
 
 /**
- * Wraps a blockchain write operation in a three-phase sonner toast lifecycle:
+ * The lifecycle stages of a blockchain transaction shown to the user.
  *
- *   1. **Loading** — shown immediately while the wallet prompt is open.
- *   2. **Submitted / Success** — replaces the loading toast on resolution.
- *   3. **Error** — replaces the loading toast with a human-readable message
- *      parsed by `parseStellarError`. Wallet rejection shows a yellow warning
- *      instead of a red error so the UI never looks broken when the user
- *      simply cancels.
+ *   pending   → wallet popup is about to open / we are waiting for the user
+ *   approving → user is reviewing the transaction inside the wallet
+ *   confirmed → transaction landed on-chain
+ *   failed    → transaction rejected or errored
+ */
+export type TxStage = "pending" | "approving" | "confirmed" | "failed"
+
+/** Call this inside your transaction function to advance the visible stage. */
+export type SetStageFn = (stage: Extract<TxStage, "pending" | "approving">) => void
+
+// ─── Message config ───────────────────────────────────────────────────────────
+
+export type TxToastMessages = {
+  /** Shown immediately — "Pending" state. Default: "Waiting for wallet…" */
+  pending?: string
+  /** Shown after setStage("approving") — wallet popup is open. Default: "Approve in your wallet…" */
+  approving?: string
+  /** Shown on success — "Confirmed" state. Default: "Transaction confirmed!" */
+  confirmed?: string
+}
+
+const DEFAULTS: Required<TxToastMessages> = {
+  pending:   "Pending — waiting for wallet…",
+  approving: "Approving — sign in your wallet…",
+  confirmed: "Confirmed!",
+}
+
+// ─── Main function ────────────────────────────────────────────────────────────
+
+/**
+ * Wraps a blockchain write operation in a three-stage sonner toast lifecycle:
  *
- * The loading toast is always dismissed (via its id) on both success and
- * failure, so the UI never hangs in a "Confirming in Wallet…" state.
+ *   1. **Pending**   — shown immediately before the wallet popup opens.
+ *   2. **Approving** — call `setStage("approving")` inside `fn` to trigger this.
+ *   3. **Confirmed** — shown automatically when the promise resolves.
+ *   4. **Failed**    — wallet rejection shows a yellow warning; all other errors
+ *                      show a red error toast with a human-readable message.
+ *
+ * The loading toast is always resolved (via its id) on both success and failure,
+ * so the UI never hangs in a loading state.
+ *
+ * Usage:
+ * ```ts
+ * await withTransactionToast(
+ *   async (setStage) => {
+ *     setStage("approving")          // right before the wallet call
+ *     return await contract.doThing()
+ *   },
+ *   { confirmed: "Hunt activated!" }
+ * )
+ * ```
+ *
+ * Existing zero-arg callers `() => contract.call()` continue to work — they
+ * will show Pending → Confirmed without an explicit Approving transition.
  */
 export async function withTransactionToast<T>(
-  fn: () => Promise<T>,
+  fn: (setStage: SetStageFn) => Promise<T>,
   messages: TxToastMessages = {}
 ): Promise<T> {
-  const {
-    loading = "Confirming in Wallet…",
-    submitted = "Transaction Submitted",
-    success = "Success!",
-  } = messages
+  const msgs: Required<TxToastMessages> = { ...DEFAULTS, ...messages }
 
-  // Show the initial loading toast and keep its id so we can update it.
-  const toastId = toast.loading(loading)
+  // Stage 1 — Pending
+  const toastId = toast.loading(msgs.pending)
+
+  const setStage: SetStageFn = (stage) => {
+    if (stage === "approving") {
+      // Update the same toast in-place so it doesn't flicker
+      toast.loading(msgs.approving, { id: toastId })
+    }
+  }
 
   try {
-    const result = await fn()
+    const result = await fn(setStage)
 
-    // Transition to submitted state.
-    toast.success(submitted, { id: toastId })
-
-    // Optionally fire a second, distinct success notification.
-    if (success && success !== submitted) {
-      setTimeout(() => toast.success(success), 600)
-    }
+    // Stage 3 — Confirmed
+    toast.success(msgs.confirmed, { id: toastId })
 
     return result
   } catch (err) {

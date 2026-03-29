@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,11 +9,16 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { X, ArrowRight, Trophy } from "lucide-react"
 import { Card, CardDescription, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Header } from "@/components/Header"
 import { getAllHunts } from "@/lib/huntStore"
 import { LeaderboardTable } from "@/components/LeaderBoardTable"
 import { hankenGrotesk } from "@/lib/font"
 import OnboardingTour from "@/components/OnboardingTour"
+import { GlobalActivityFeed } from "@/components/GlobalActivityFeed"
+import { FeaturedHunts } from "@/components/FeaturedHunts"
+import { HuntCoverImage } from "@/components/HuntCoverImage"
+import { Footer } from "@/components/Footer"
 
 interface WalletOption {
   id: string
@@ -24,23 +30,27 @@ interface WalletOption {
 const walletOptions: WalletOption[] = []
 
 // Active hunts for the public Game Arcade (Draft hunts become visible here after activation).
+// Private hunts (is_private=true) are excluded from the public arcade.
 function fetchAllHunts() {
-  return getAllHunts().filter((h) => h.status === "Active")
+  return getAllHunts().filter((h) => h.status === "Active" && !h.is_private)
 }
 
 export default function GameArcade() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
   const [isConnectingWallet, setIsConnectingWallet] = useState(false)
-  const [selectedWallet, setSelectedWallet] = useState<WalletOption | null>(null)
   const [displayName, setDisplayName] = useState("")
   const [gameLink, setGameLink] = useState("")
-  const [isConnected, setIsConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState("")
   const [balance, setBalance] = useState("")
 
-  const [hunts, setHunts] = useState<ReturnType<typeof fetchAllHunts>>([])
-  const [isLoadingHunts, setIsLoadingHunts] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<"leaderboard" | "none">("none")
+  const [rewardFilter, setRewardFilter] = useState<"all" | "XLM" | "NFT">("all")
+
+  const { data: hunts = [], isLoading: isLoadingHunts } = useQuery({
+    queryKey: ["activeHunts"],
+    queryFn: async () => fetchAllHunts(),
+  })
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -51,47 +61,39 @@ export default function GameArcade() {
     }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    try {
-      const active = fetchAllHunts()
-      if (!cancelled) setHunts(active)
-    } catch (error) {
-      console.error("Failed to fetch hunts", error)
-    } finally {
-      if (!cancelled) setIsLoadingHunts(false)
-    }
-  }, [])
-
-  const handleWalletSelect = (wallet: WalletOption) => {
-    setSelectedWallet(wallet)
+  const handleWalletSelect = () => {
     setIsConnectingWallet(true)
     // Simulate wallet address generation
     setWalletAddress("0xe5f...E5")
   }
 
   const handleContinue = () => {
-    setIsConnected(true)
     setBalance("24.2453")
     setIsWalletModalOpen(false)
     setIsConnectingWallet(false)
-    setSelectedWallet(null)
     setDisplayName("")
-  }
-
-  const handleDisconnect = () => {
-    setIsConnected(false)
-    setWalletAddress("")
-    setBalance("")
   }
 
   const handleCreateGame = () => {
     window.location.href = "/hunty"
   }
 
+  const filteredHunts = hunts.filter((hunt) => {
+    const matchesSearch =
+      hunt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      hunt.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesReward =
+      rewardFilter === "all" ||
+      hunt.rewardType === rewardFilter ||
+      hunt.rewardType === "Both";
+
+    return matchesSearch && matchesReward;
+  });
+
   return (
     <div
-      className={`min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] pb-[75px]`}
+      className={`min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] dark:from-slate-900 dark:bg-slate-900 dark:to-slate-800 pb-[75px]`}
     >
       <OnboardingTour />
       {/* Header */}
@@ -100,7 +102,7 @@ export default function GameArcade() {
       />
 
       {/* Main Content */}
-      <div className="max-w-[1600px] px-14 pt-10 pb-12 bg-white mx-auto rounded-4xl relative">
+      <div className="max-w-[1600px] px-14 pt-10 pb-12 bg-white dark:bg-slate-900 mx-auto rounded-4xl relative">
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#0C0C4F] shadow-lg absolute left-1/2 top-1 -translate-x-1/2 -translate-y-1/2">
@@ -221,54 +223,104 @@ export default function GameArcade() {
 
         </div>
 
+        {/* Global Activity Feed */}
+        <div className="mt-10 mb-10">
+          <GlobalActivityFeed />
+        </div>
+
+        {/* Featured Hunts Hero Section */}
+        <FeaturedHunts />
+
         {/* Active Hunts Grid */}
         <div className="mt-10">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
             <h2 className="text-2xl md:text-3xl font-semibold bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent">
               Browse Active Hunts
             </h2>
-            <p className="text-sm text-slate-600">
-              {isLoadingHunts ? "Loading hunts..." : `${hunts.length} active ${hunts.length === 1 ? "hunt" : "hunts"} found`}
-            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                {(["all", "XLM", "NFT"] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setRewardFilter(type)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                      rewardFilter === type
+                        ? "bg-white dark:bg-slate-700 text-[#3737A4] shadow-sm"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {type === "all" ? "All Rewards" : type}
+                  </button>
+                ))}
+              </div>
+              <Input
+                placeholder="Search hunts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-md bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-[#3737A4] focus:ring-[#3737A4]"
+              />
+              <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-nowrap hidden sm:block">
+                {isLoadingHunts ? "Loading hunts..." : `${filteredHunts.length} active ${filteredHunts.length === 1 ? "hunt" : "hunts"} found`}
+              </p>
+            </div>
           </div>
 
           {isLoadingHunts ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 4 }).map((_, idx) => (
-                <div
+                <Card
                   key={idx}
-                  className="rounded-2xl border border-slate-200 bg-slate-100/60 p-4 animate-pulse space-y-3"
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                 >
-                  <div className="h-5 w-3/4 bg-slate-200 rounded" />
-                  <div className="h-3 w-full bg-slate-200 rounded" />
-                  <div className="h-3 w-5/6 bg-slate-200 rounded" />
-                  <div className="h-4 w-24 bg-slate-300 rounded-full mt-4" />
-                </div>
+                  <div className="p-5">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full mb-1" />
+                    <Skeleton className="h-4 w-5/6 mb-4" />
+                    <div className="flex items-center justify-between mt-4">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                </Card>
               ))}
             </div>
-          ) : hunts.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 py-10 text-center text-slate-600">
-              No active hunts available right now.{" "}
-              <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>
+          ) : filteredHunts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/80 dark:bg-slate-800/50 py-10 text-center text-slate-600 dark:text-slate-400">
+              {searchQuery ? "No hunts match your search query." : "No active hunts available right now."}{" "}
+              {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hunts.map((hunt) => (
+              {filteredHunts.map((hunt) => (
                 <Card
                   key={hunt.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow"
+                  className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow"
                 >
+                  <HuntCoverImage
+                    src={hunt.coverImageCid}
+                    alt={`${hunt.title} cover`}
+                    className="relative w-full h-40 bg-slate-100"
+                  />
                   <div className="p-5">
-                    <CardTitle className="text-lg font-semibold mb-2 line-clamp-2">
+                    <CardTitle className="text-lg font-semibold mb-2 line-clamp-2 dark:text-slate-100">
                       {hunt.title}
                     </CardTitle>
-                    <CardDescription className="text-sm text-slate-600 mb-4 line-clamp-3">
+                    <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-3">
                       {hunt.description}
                     </CardDescription>
                     <div className="flex items-center justify-between mt-4">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-[#3737A4]">
-                        {hunt.cluesCount} {hunt.cluesCount === 1 ? "Clue" : "Clues"}
-                      </span>
+                      <div className="flex gap-2 items-center">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-[#3737A4]">
+                          {hunt.cluesCount} {hunt.cluesCount === 1 ? "Clue" : "Clues"}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium ${
+                          hunt.rewardType === "XLM" ? "bg-green-50 text-green-700" :
+                          hunt.rewardType === "NFT" ? "bg-purple-50 text-purple-700" :
+                          "bg-amber-50 text-amber-700"
+                        }`}>
+                          {hunt.rewardType} Reward
+                        </span>
+                      </div>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -313,7 +365,7 @@ export default function GameArcade() {
                 walletOptions.map((wallet) => (
                   <Button
                     key={wallet.id}
-                    onClick={() => handleWalletSelect(wallet)}
+                    onClick={() => handleWalletSelect()}
                     className="w-full bg-[#0C0C4F] hover:bg-slate-700 text-white p-4 rounded-lg flex items-center gap-3 justify-start px-6 py-6"
                   >
                     <span className="text-xl">{wallet.icon}</span>
@@ -359,6 +411,8 @@ export default function GameArcade() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Footer />
     </div>
   )
 }

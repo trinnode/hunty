@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -13,17 +14,7 @@ import { get_clue_info, get_hunt } from "@/lib/contracts/hunt";
 import { HuntCards } from "./HuntCards";
 import Replay from "./icons/Replay";
 import Share from "./icons/Share";
-
-interface Hunt {
-  id: number;
-  title: string;
-  description: string;
-  link: string;
-  code: string;
-  points?: number;
-  hint?: string;
-  hintCost?: number;
-}
+import type { HuntCard as Hunt, HuntInfo } from "@/lib/types";
 
 interface PlayGameProps {
   hunts: Hunt[];
@@ -44,69 +35,57 @@ export function PlayGame({
 }: PlayGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [fetchedClues, setFetchedClues] = useState<Hunt[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [solvedClues, setSolvedClues] = useState<Set<number>>(new Set());
-  const [fetchAttempt, setFetchAttempt] = useState(0);
 
   const solvedCount = solvedClues.size;
 
-  useEffect(() => {
-    if (huntId == null) return;
+  const {
+    data: fetched = null as null | { clues: Hunt[]; huntInfo: HuntInfo },
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ["huntClues", huntId],
+    queryFn: async () => {
+      if (huntId == null) return null;
+      const huntInfo = await get_hunt(huntId);
+      const clues: Hunt[] = [];
 
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setFetchedClues(null);
+      for (let i = 0; i < huntInfo.totalClues; i++) {
+        const clue = await get_clue_info(huntId, i);
+        clues.push({
+          id: clue.id,
+          title: clue.question,
+          description: `${clue.points} pts`,
+          link: "",
+          code: "",
+          points: clue.points,
+          hint: clue.hint,
+          hintCost: clue.hintCost,
+        });
+      }
+      return { clues, huntInfo };
+    },
+    enabled: huntId != null,
+  });
+
+  const error: string | null = queryError instanceof Error ? queryError.message : queryError ? "Failed to fetch clues" : null;
+
+  useEffect(() => {
     setCurrentCardIndex(0);
     setScore(0);
     setSolvedClues(new Set());
+  }, [huntId]);
 
-    async function fetchClues() {
-      try {
-        const huntInfo = await get_hunt(huntId!);
-        const clues: Hunt[] = [];
-
-        for (let i = 0; i < huntInfo.totalClues; i++) {
-          const clue = await get_clue_info(huntId!, i);
-          clues.push({
-            id: clue.id,
-            title: clue.question,
-            description: `${clue.points} pts`,
-            link: "",
-            code: "",
-            points: clue.points,
-            hint: clue.hint,
-            hintCost: clue.hintCost,
-          });
-        }
-
-        if (!cancelled) {
-          setFetchedClues(clues);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const message =
-            err instanceof Error ? err.message : "Failed to fetch clues";
-          setError(message);
-          toast.error(message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
     }
+  }, [error]);
 
-    fetchClues();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [huntId, fetchAttempt]);
-
-  const hunts = huntId != null ? fetchedClues ?? [] : fetchedClues ?? huntsProp;
+  const fetchedClues = fetched?.clues ?? null;
+  const huntInfo = fetched?.huntInfo ?? null;
+  const hunts = huntId != null ? (fetchedClues ?? []) : (huntsProp ?? []);
   const hasHunts = hunts.length > 0;
 
   const handleScoreUpdate = (points: number) => {
@@ -122,6 +101,19 @@ export function PlayGame({
     if (clueIndex < hunts.length - 1) {
       setCurrentCardIndex(clueIndex + 1);
     } else {
+      // Hunt completed! Trigger notification if enabled
+      if (huntId && huntInfo?.emailNotifications && huntInfo?.creatorEmail) {
+        fetch("/api/notifications/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            huntId,
+            huntName: gameName,
+            creatorEmail: huntInfo.creatorEmail,
+            completionTime: new Date().toLocaleString(),
+          }),
+        }).catch((err) => console.error("Failed to send notification:", err));
+      }
       onGameComplete();
     }
   };
@@ -146,7 +138,7 @@ export function PlayGame({
           <p className="text-red-500 text-lg mb-4">{error}</p>
           <div className="flex items-center justify-center gap-3">
             {huntId != null && (
-              <Button onClick={() => setFetchAttempt((current) => current + 1)}>
+              <Button onClick={() => refetch()}>
                 Retry
               </Button>
             )}
@@ -177,11 +169,13 @@ export function PlayGame({
   const activeHunt = hunts[currentCardIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff]">
-      <Header balance="24.2453" />
+    <div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff] print:bg-white print:bg-none print:min-h-0">
+      <div className="print:hidden">
+        <Header balance="24.2453" />
+      </div>
 
-      <div className="max-w-[1500px] px-14 pt-10 pb-12 bg-white mx-auto rounded-4xl relative">
-        <div className="flex items-center gap-4 mb-8">
+      <div className="max-w-[1500px] px-14 pt-10 pb-12 bg-white mx-auto rounded-4xl relative print:px-0 print:py-0 print:w-full print:max-w-none print:rounded-none">
+        <div className="flex items-center gap-4 mb-8 print:hidden">
           <Button
             variant="ghost"
             onClick={onExit}
@@ -203,7 +197,7 @@ export function PlayGame({
           </div>
         </div>
 
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 print:hidden">
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-[#0C0C4F] shadow-lg absolute left-1/2 top-1 -translate-x-1/2 -translate-y-1/2">
             <Image src="/icons/logo.png" alt="Logo" width={96} height={96} />
           </div>
@@ -228,10 +222,10 @@ export function PlayGame({
           </div>
         </div>
 
-        <div className="relative flex justify-center mt-8 min-h-[500px] overflow-x-auto">
-          <div className="relative flex items-start justify-center w-full max-w-none px-8">
+        <div className="relative flex justify-center mt-8 min-h-[500px] overflow-x-auto print:mt-0 print:min-h-0 print:overflow-visible">
+          <div className="relative flex items-start justify-center w-full max-w-none px-8 print:p-0">
             {currentCardIndex > 0 && (
-              <div className="absolute left-0 top-0 flex flex-col gap-4 mr-8">
+              <div className="absolute left-0 top-0 flex flex-col gap-4 mr-8 print:hidden">
                 <div className="opacity-40 scale-60 transform origin-right">
                   <HuntCards
                     hunts={[hunts[currentCardIndex - 1]]}
@@ -261,7 +255,7 @@ export function PlayGame({
             </div>
 
             {currentCardIndex < hunts.length - 1 && (
-              <div className="absolute right-0 top-0 flex flex-col gap-6 ml-8">
+              <div className="absolute right-0 top-0 flex flex-col gap-6 ml-8 print:hidden">
                 {hunts
                   .slice(currentCardIndex + 1, currentCardIndex + 3)
                   .map((hunt, index) => (

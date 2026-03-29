@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Joyride, { Step, CallBackProps, STATUS } from "react-joyride";
+import { Joyride, Step, EventData, STATUS } from "react-joyride";
 
 const OnboardingTour: React.FC = () => {
   const [run, setRun] = useState(false);
@@ -17,7 +17,7 @@ const OnboardingTour: React.FC = () => {
     {
       target: "#wallet-button",
       content: "First, connect your wallet to start playing and earning rewards.",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: "#play-button",
@@ -29,7 +29,7 @@ const OnboardingTour: React.FC = () => {
     },
   ];
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  const handleJoyrideCallback = (data: EventData) => {
     const { status } = data;
     if (([STATUS.FINISHED, STATUS.SKIPPED] as string[]).includes(status)) {
       localStorage.setItem("hasSeenOnboardingTour", "true");
@@ -39,19 +39,16 @@ const OnboardingTour: React.FC = () => {
 
   return (
     <Joyride
-      callback={handleJoyrideCallback}
+      onEvent={handleJoyrideCallback}
       continuous
-      hideCloseButton
       run={run}
       scrollToFirstStep
-      showProgress
-      showSkipButton
       steps={steps}
-      styles={{
-        options: {
-          primaryColor: "#3737A4",
-          zIndex: 1000,
-        },
+      options={{
+        primaryColor: "#3737A4",
+        zIndex: 1000,
+        buttons: ["back", "primary", "skip"],
+        showProgress: true,
       }}
     />
   );

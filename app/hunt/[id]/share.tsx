@@ -4,7 +4,8 @@ import { HuntControls } from "@/components/HuntControls";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "lucide-react";
 import { QrCodeModal } from "@/components/QrCodeModal";
-import { StoredHunt, updateHuntStatus } from "@/lib/huntStore";
+import type { StoredHunt } from "@/lib/types";
+import { updateHuntStatus } from "@/lib/huntStore";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { RegistrationButton } from "@/components/RegistrationButton";
@@ -187,6 +188,7 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
         <HuntControls
           hunt={hunt}
           connectedPublicKey={connectedPublicKey}
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           onCancelled={(huntId, txHash) => {
             markHuntCancelled(huntId)
             router.push("/hunts")

@@ -4,19 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Plus, Minus } from "lucide-react"
 import Trash from "@/components/icons/trash"
 import Coin from "@/components/icons/Coin"
-import { ReactNode, useState } from "react"
+import { useState } from "react"
+import type { Reward, RewardPlayerProgress } from "@/lib/types"
+import { claimReward } from "@/lib/contracts/rewardManager"
 
-export interface Reward {
-  place: number
-  amount: number
-  icon: ReactNode
-}
-
-export interface PlayerProgress {
-  is_completed: boolean;
-  reward_claimed: boolean;
-  hunt_id?: number | string;
-}
+export type { Reward, RewardPlayerProgress as PlayerProgress }
 
 export interface RewardsPanelProps {
   rewards: Reward[];
@@ -24,7 +16,7 @@ export interface RewardsPanelProps {
   onAddReward?: () => void;
   onDeleteReward?: (place: number) => void;
   error?: string;
-  playerProgress?: PlayerProgress;
+  playerProgress?: RewardPlayerProgress;
   onClaimReward?: (hunt_id?: number | string) => Promise<void>;
 }
 
@@ -38,8 +30,14 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
       if (onClaimReward) {
         await onClaimReward(playerProgress?.hunt_id);
       } else {
-        // Simulate network/contract call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (playerProgress?.hunt_id == null) {
+          throw new Error("Missing hunt_id for reward claim")
+        }
+        const parsed = Number(playerProgress.hunt_id)
+        if (Number.isNaN(parsed)) {
+          throw new Error("Invalid hunt_id for reward claim")
+        }
+        await claimReward(parsed)
       }
       setClaimed(true);
     } catch (e) {

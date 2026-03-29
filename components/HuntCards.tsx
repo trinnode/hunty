@@ -2,22 +2,14 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, Printer } from "lucide-react";
 import picture from "@/public/static-images/image1.png";
 import { Skeleton } from "@/components/ui/skeleton";
 import { submitAnswer, AnswerIncorrectError } from "@/lib/contracts/hunt";
 import { resolveImageSrc, GATEWAY_COUNT } from "@/lib/ipfs";
+import type { HuntCard as Hunt } from "@/lib/types";
 
-export interface Hunt {
-  id: string | number;
-  title?: string;
-  description?: string;
-  link?: string;
-  code?: string;
-  image?: string;
-  hint?: string;
-  hintCost?: number;
-}
+export type { Hunt };
 
 interface HuntCardsProps {
   hunts: Hunt[]; // always an array of one item in active/preview mode
@@ -142,45 +134,48 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   const isLocked = !isActive || preview || isPending || solved;
 
   return (
-    <div className={`rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative ${isActive ? "scale-105 border-2 border-blue-400" : preview ? "opacity-70" : "opacity-90"}`}>
+    <div className={`rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative print:shadow-none print:border-none print:max-w-none print:scale-100 print:m-0 print:opacity-100 ${isActive ? "scale-105 border-2 border-blue-400" : preview ? "opacity-70" : "opacity-90"}`}>
       {solved && (
-        <div className="absolute inset-0 bg-green-500/10 rounded-2xl z-20 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-green-500/10 rounded-2xl z-20 flex items-center justify-center pointer-events-none print:hidden">
           <CheckCircle2 className="w-16 h-16 text-green-500 opacity-60" />
         </div>
       )}
-      <div className="rounded-t-2xl p-6 text-white bg-gradient-to-b from-[#3737A4] to-[#0C0C4F]">
-        <div className="flex justify-between items-center text-sm mb-2">
+      <div className="rounded-t-2xl px-6 pt-8 pb-6 text-white bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] print:bg-none print:text-black print:p-8">
+        <div className="flex justify-between items-center text-sm mb-4">
           {points != null && (
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-semibold">{points} pts</span>
+            <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs font-semibold print:bg-transparent print:border print:border-gray-300 print:text-black">{points} pts</span>
           )}
-          <span className="text-[#B3B3E5] ml-auto">{currentIndex}/{totalHunts}</span>
+          <span className="text-[#B3B3E5] ml-auto print:text-black">{currentIndex}/{totalHunts}</span>
         </div>
-        <h3 className="text-xl font-bold mb-2">
+        <h3 className="text-xl font-bold mb-3 print:text-3xl print:mb-4">
           {hunt.title || "Untitled Hunt"}
         </h3>
-        <p className="text-sm opacity-90 mb-4">
+        <p className="text-sm opacity-90 mb-6 print:text-lg print:opacity-100 print:mb-8">
           {hunt.description || "No description provided."}
         </p>
-        {hunt.link || hunt.image ? (
-          <Image
-            src={resolveImageSrc(hunt.link || hunt.image || "", imgGatewayIdx)}
-            alt="hunt"
-            width={180}
-            height={180}
-            onError={() => {
-              if (imgGatewayIdx < GATEWAY_COUNT - 1) {
-                setImgGatewayIdx((i) => i + 1)
-              }
-            }}
-            unoptimized
-          />
-        ) : (
-          <Image src={picture} alt="hunt" width={180} height={180} />
-        )}
+        <div className="flex print:justify-center">
+          {hunt.link || hunt.image ? (
+            <Image
+              src={resolveImageSrc(hunt.link || hunt.image || "", imgGatewayIdx)}
+              alt="hunt"
+              width={180}
+              height={180}
+              onError={() => {
+                if (imgGatewayIdx < GATEWAY_COUNT - 1) {
+                  setImgGatewayIdx((i) => i + 1)
+                }
+              }}
+              unoptimized
+              className="print:w-64 print:h-auto print:object-contain print:rounded-xl"
+            />
+          ) : (
+            <Image src={picture} alt="hunt" width={180} height={180} className="print:w-64 print:h-auto print:object-contain print:rounded-xl" />
+          )}
+        </div>
       </div>
 
       {hunt.hint && !solved && (
-        <div className="bg-white px-6 py-2 border-b border-gray-100">
+        <div className="bg-white px-6 py-2 border-b border-gray-100 print:hidden">
           {!hintRevealed ? (
             <Button
               variant="outline"
@@ -200,8 +195,21 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
         </div>
       )}
 
+      {/* Print button */}
+      <div className="bg-white px-6 pt-3 print:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-slate-600 hover:text-[#3737A4] hover:bg-slate-50 border-slate-200"
+          onClick={() => window.print()}
+        >
+          <Printer className="w-4 h-4 mr-2" />
+          Print Clue
+        </Button>
+      </div>
+
       {/* Input and button only for active, non-preview cards */}
-      <div className="bg-white flex gap-2 p-6 rounded-b-2xl items-center">
+      <div className="bg-white flex gap-2 p-6 rounded-b-2xl items-center print:hidden">
         <Input
           placeholder={isActive && !preview ? "Enter answer to unlock" : "Locked"}
           className={`flex-1 px-4 py-2 rounded-full transition-colors ${isLocked ? "bg-gray-100 cursor-not-allowed" : ""}`}
@@ -224,7 +232,7 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
       </div>
 
       {/* Feedback */}
-      <div className="bg-white rounded-b-2xl -mt-4 pb-4 px-6 min-h-[36px]">
+      <div className="bg-white rounded-b-2xl -mt-4 pb-4 px-6 min-h-[36px] print:hidden">
         {success && (
           <div className="flex items-center justify-center gap-2 text-green-600 font-bold text-base animate-bounce">
             <CheckCircle2 className="w-5 h-5" />

@@ -3,47 +3,64 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import ToggleSwitch from "./ToggleButton"
-import { Minus, Plus, Trash2 } from "lucide-react"
+import { Minus, Plus, Trash2, Eye, EyeOff } from "lucide-react"
 import { ChangeEvent, useRef, useState } from "react"
+import { Controller, useFieldArray, useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 import { addClue } from "@/lib/contracts/hunt"
 import { saveClueLocally } from "@/lib/huntStore"
 import { withTransactionToast } from "@/lib/txToast"
 import { uploadToIPFS } from "@/lib/ipfs"
 import { toast } from "sonner"
-
-interface Hunt {
-  id: number
-  title: string
-  description: string
-  link: string
-  code: string
-  image?: string
-}
-
-interface ClueRow {
-  id: number
-  question: string
-  answer: string
-  points: number
-  hint: string
-  hintCost: number
-}
+import { HuntCards } from "./HuntCards"
+import type { HuntCard } from "@/lib/types"
 
 interface HuntFormProps {
-  hunt: Hunt
-  onUpdate: (field: keyof Hunt, value: string) => void
+  hunt: HuntCard
+  onUpdate: (field: string, value: string) => void
   onRemove: () => void
   huntId?: number
   onCluesSaved?: (count: number) => void
 }
 
+const clueSchema = z.object({
+  question: z.string().min(1, "Question is required"),
+  answer: z.string().min(1, "Answer is required"),
+  points: z.number().min(1, "Points must be at least 1"),
+  hint: z.string(),
+  hintCost: z.number().min(0),
+})
+
+const cluesFormSchema = z.object({
+  clues: z.array(clueSchema).min(1, "At least one clue is required"),
+})
+
+type CluesFormData = z.infer<typeof cluesFormSchema>
+
 export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: HuntFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [clueRows, setClueRows] = useState<ClueRow[]>([
-    { id: 1, question: "", answer: "", points: 10, hint: "", hintCost: 0 },
-  ])
   const [isSavingClues, setIsSavingClues] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [linkEnabled, setLinkEnabled] = useState(false)
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CluesFormData>({
+    resolver: zodResolver(cluesFormSchema),
+    defaultValues: {
+      clues: [{ question: "", answer: "", points: 10, hint: "", hintCost: 0 }],
+    },
+  })
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "clues",
+  })
 
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -67,23 +84,18 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
   }
 
   const addClueRow = () => {
-    const newId = clueRows.length > 0 ? Math.max(...clueRows.map((r) => r.id)) + 1 : 1
-    setClueRows([...clueRows, { id: newId, question: "", answer: "", points: 10, hint: "", hintCost: 0 }])
+    append({ question: "", answer: "", points: 10, hint: "", hintCost: 0 })
   }
 
-  const removeClueRow = (id: number) => {
-    if (clueRows.length > 1) {
-      setClueRows(clueRows.filter((r) => r.id !== id))
+  const removeClueRow = (index: number) => {
+    if (fields.length > 1) {
+      remove(index)
     }
   }
 
-  const updateClueRow = (id: number, field: keyof Omit<ClueRow, "id">, value: string | number) => {
-    setClueRows(clueRows.map((r) => (r.id === id ? { ...r, [field]: value } : r)))
-  }
-
-  const handleSaveClues = async () => {
+  const onSaveClues = async (data: CluesFormData) => {
     if (!huntId) return
-    const valid = clueRows.filter((r) => r.question.trim() && r.answer.trim())
+    const valid = data.clues.filter((r) => r.question.trim() && r.answer.trim())
     if (!valid.length) return
 
     setIsSavingClues(true)
@@ -91,41 +103,80 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
       for (const row of valid) {
         const normalizedAnswer = row.answer.trim().toLowerCase()
         await withTransactionToast(
-          () => addClue(huntId, row.question.trim(), normalizedAnswer, row.points, row.hint.trim() || undefined, row.hintCost),
-          { loading: "Adding clue...", submitted: "Clue submitted", success: "" }
+          async (setStage) => {
+            setStage("approving")
+            return addClue(huntId, row.question.trim(), normalizedAnswer, row.points, row.hint?.trim() || undefined, row.hintCost)
+          },
+          {
+            pending:   "Pending — preparing clue…",
+            approving: "Approving — sign in your wallet…",
+            confirmed: "Clue confirmed!",
+          }
         )
         saveClueLocally({
           huntId,
           question: row.question.trim(),
           answer: normalizedAnswer,
           points: row.points,
-          hint: row.hint.trim() || undefined,
+          hint: row.hint?.trim() || undefined,
           hintCost: row.hintCost,
         })
       }
       onCluesSaved?.(valid.length)
-      setClueRows([{ id: 1, question: "", answer: "", points: 10, hint: "", hintCost: 0 }])
+      reset({ clues: [{ question: "", answer: "", points: 10, hint: "", hintCost: 0 }] })
     } finally {
       setIsSavingClues(false)
     }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 print:space-y-0">
+      <div className="flex items-center justify-between print:hidden">
         <h3 className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] text-2xl font-semibold text-transparent bg-clip-text">Hunt {hunt.id}</h3>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowPreview(!showPreview)}
+            variant="outline"
+            size="sm"
+            className="flex gap-1 text-slate-600 hover:text-slate-800"
+          >
+            {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPreview ? "Hide Preview" : "Preview"}
+          </Button>
           <Button onClick={onRemove} variant="ghost" size="sm" className="text-red-500 hover:text-red-700 flex gap-0.5">
             <Minus />
             Remove
           </Button>
+        </div>
       </div>
 
-      <Input
-        placeholder="Title of the Hunt"
-        value={hunt.title}
-        onChange={(e) => onUpdate("title", e.target.value)}
-        className="w-full pl-6 py-3"
-      />
+      {showPreview && (
+        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 print:bg-white print:border-none print:p-0">
+          <p className="text-xs text-slate-500 mb-3 font-medium print:hidden">Live Preview</p>
+          <div className="flex justify-center print:block">
+            <HuntCards
+              hunts={[{
+                id: hunt.id,
+                title: hunt.title || "Untitled Hunt",
+                description: hunt.description || "No description yet...",
+                link: hunt.link,
+                code: hunt.code,
+                image: hunt.image,
+              }]}
+              preview={true}
+              isActive={false}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="print:hidden space-y-4">
+        <Input
+          placeholder="Title of the Hunt"
+          value={hunt.title}
+          onChange={(e) => onUpdate("title", e.target.value)}
+          className="w-full pl-6 py-3"
+        />
 
         <div className="flex gap-1">
           <Input
@@ -169,7 +220,10 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
         <div className="flex items-center justify-between">
           <span className="text-xl font-semibold">Add Link</span>
           <div className="flex gap-2">
-            <ToggleSwitch/>
+            <ToggleSwitch
+              isActive={linkEnabled}
+              onClick={() => setLinkEnabled(!linkEnabled)}
+            />
           </div>
         </div>
         <Input
@@ -198,55 +252,100 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
         </div>
 
         <div className="space-y-2">
-          {clueRows.map((row, index) => (
-            <div key={row.id} className="flex flex-col gap-2 p-2 border border-slate-100 rounded-lg">
+          {fields.map((field, index) => (
+            <div key={field.id} className="flex flex-col gap-2 p-2 border border-slate-100 rounded-lg">
               <div className="flex gap-2 items-center">
                 <span className="text-xs text-slate-400 w-4 shrink-0">{index + 1}.</span>
-                <Input
-                  placeholder="Riddle / Question"
-                  value={row.question}
-                  onChange={(e) => updateClueRow(row.id, "question", e.target.value)}
-                  className="flex-1 pl-3 py-2 text-sm"
-                />
-                <Input
-                  placeholder="Answer"
-                  value={row.answer}
-                  onChange={(e) => updateClueRow(row.id, "answer", e.target.value)}
-                  className="w-32 pl-3 py-2 text-sm"
-                />
-                <Input
-                  type="number"
-                  placeholder="Pts"
-                  value={row.points}
-                  min={1}
-                  onChange={(e) => updateClueRow(row.id, "points", parseInt(e.target.value, 10) || 0)}
-                  className="w-16 pl-3 py-2 text-sm"
-                />
+                <div className="flex-1 flex flex-col">
+                  <Controller
+                    control={control}
+                    name={`clues.${index}.question`}
+                    render={({ field: f }) => (
+                      <Input
+                        placeholder="Riddle / Question"
+                        {...f}
+                        className="pl-3 py-2 text-sm"
+                      />
+                    )}
+                  />
+                  {errors.clues?.[index]?.question && (
+                    <span className="text-red-500 text-xs mt-0.5">{errors.clues[index].question.message}</span>
+                  )}
+                </div>
+                <div className="w-32 flex flex-col">
+                  <Controller
+                    control={control}
+                    name={`clues.${index}.answer`}
+                    render={({ field: f }) => (
+                      <Input
+                        placeholder="Answer"
+                        {...f}
+                        className="pl-3 py-2 text-sm"
+                      />
+                    )}
+                  />
+                  {errors.clues?.[index]?.answer && (
+                    <span className="text-red-500 text-xs mt-0.5">{errors.clues[index].answer.message}</span>
+                  )}
+                </div>
+                <div className="w-16 flex flex-col">
+                  <Controller
+                    control={control}
+                    name={`clues.${index}.points`}
+                    render={({ field: f }) => (
+                      <Input
+                        type="number"
+                        placeholder="Pts"
+                        min={1}
+                        value={f.value}
+                        onChange={(e) => f.onChange(parseInt(e.target.value, 10) || 0)}
+                        onBlur={f.onBlur}
+                        name={f.name}
+                        ref={f.ref}
+                        className="pl-3 py-2 text-sm"
+                      />
+                    )}
+                  />
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => removeClueRow(row.id)}
-                  disabled={clueRows.length === 1}
+                  onClick={() => removeClueRow(index)}
+                  disabled={fields.length === 1}
                   className="text-red-400 hover:text-red-600 shrink-0 disabled:opacity-30"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
               <div className="flex gap-2 items-center pl-6">
-                <Input
-                  placeholder="Optional Hint Text"
-                  value={row.hint}
-                  onChange={(e) => updateClueRow(row.id, "hint", e.target.value)}
-                  className="flex-1 pl-3 py-2 text-sm"
+                <Controller
+                  control={control}
+                  name={`clues.${index}.hint`}
+                  render={({ field: f }) => (
+                    <Input
+                      placeholder="Optional Hint Text"
+                      {...f}
+                      className="flex-1 pl-3 py-2 text-sm"
+                    />
+                  )}
                 />
-                <Input
-                  type="number"
-                  placeholder="Hint Cost"
-                  value={row.hintCost}
-                  min={0}
-                  onChange={(e) => updateClueRow(row.id, "hintCost", parseInt(e.target.value, 10) || 0)}
-                  className="w-24 pl-3 py-2 text-sm"
+                <Controller
+                  control={control}
+                  name={`clues.${index}.hintCost`}
+                  render={({ field: f }) => (
+                    <Input
+                      type="number"
+                      placeholder="Hint Cost"
+                      min={0}
+                      value={f.value}
+                      onChange={(e) => f.onChange(parseInt(e.target.value, 10) || 0)}
+                      onBlur={f.onBlur}
+                      name={f.name}
+                      ref={f.ref}
+                      className="w-24 pl-3 py-2 text-sm"
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -257,14 +356,15 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
           <div className="flex justify-end pt-1">
             <Button
               type="button"
-              onClick={handleSaveClues}
-              disabled={isSavingClues || clueRows.every((r) => !r.question.trim() || !r.answer.trim())}
+              onClick={handleSubmit(onSaveClues)}
+              disabled={isSavingClues}
               className="bg-gradient-to-b from-[#39A437] to-[#194F0C] hover:bg-green-700 text-white px-5 py-2 rounded-xl disabled:opacity-50"
             >
               {isSavingClues ? "Saving..." : "Save Clues"}
             </Button>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
